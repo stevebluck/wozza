@@ -1,0 +1,23 @@
+{
+  "name": "@wozza/prelude",
+  "version": "1.0.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "check": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "effect": "catalog:effect"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "prettier": "catalog:prettier"
+  }
+}

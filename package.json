@@ -1,0 +1,23 @@
+{
+  "name": "wozza",
+  "private": true,
+  "packageManager": "pnpm@9.3.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "update:latest": "turbo update:latest",
+    "check": "turbo check",
+    "test": "turbo test",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "prepare": "husky",
+    "circular": "npx madge --circular --extensions ts ."
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  },
+  "devDependencies": {
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.5",
+    "turbo": "^2.0.4"
+  }
+}

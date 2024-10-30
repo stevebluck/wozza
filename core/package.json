@@ -1,0 +1,22 @@
+{
+  "name": "@wozza/core",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "exports": {
+    ".": "./index.js"
+  },
+  "scripts": {
+    "check": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "effect": "catalog:effect"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "prettier": "catalog:prettier"
+  }
+}
