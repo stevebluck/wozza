@@ -14,10 +14,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "effect": "catalog:effect"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",
-    "prettier": "catalog:prettier"
+    "prettier": "catalog:"
   }
 }

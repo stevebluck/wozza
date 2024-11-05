@@ -1,7 +1,9 @@
-import { reactRouter } from "@react-router/dev/vite";
-import tsconfigPaths from "vite-tsconfig-paths";
-import { defineConfig } from "vite";
+import { reactRouter } from "@react-router/dev/vite"
+import tsconfigPaths from "vite-tsconfig-paths"
+import { defineConfig, Plugin } from "vite"
 
 export default defineConfig({
-  plugins: [reactRouter(), tsconfigPaths()],
-});
+  build: { target: "esnext" },
+  optimizeDeps: { holdUntilCrawlEnd: true },
+  plugins: [reactRouter(), tsconfigPaths()]
+})

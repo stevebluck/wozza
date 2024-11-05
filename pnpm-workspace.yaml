@@ -4,22 +4,14 @@ packages:
   - "packages/*"
 
 catalog:
+  "@effect/platform": ^0.69.11
+  effect: ^3.10.6
   typescript: ^5.6.3
   vitest: ^1.6.0
-
-catalogs:
-  prettier:
-    prettier: ^3.2.5
-    prettier-plugin-tailwindcss: ^0.5.14
-
-  tailwindcss:
-    autoprefixer: ^10.4.20
-    postcss: ^8.4.47
-    tailwindcss: ^3.4.13
-
-  effect:
-    effect: ^3.10.6
-
-  react:
-    react: ^18.3.1
-    react-dom: ^18.3.1
+  prettier: ^3.2.5
+  prettier-plugin-tailwindcss: ^0.5.14
+  autoprefixer: ^10.4.20
+  postcss: ^8.4.47
+  tailwindcss: ^3.4.13
+  react: ^18.3.1
+  react-dom: ^18.3.1

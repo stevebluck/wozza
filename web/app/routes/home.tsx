@@ -1,16 +1,36 @@
-import type { MetaFunction } from "react-router";
-import * as RR from "@wozza/react-router";
+import * as Route from "./+types.home"
+import { useRevalidator, type MetaFunction } from "react-router"
+import { Effect, Schema } from "effect"
+import { Cookie, HttpRequest, HttpResponse, Result } from "@wozza/react-router-effect"
+import { Loader } from "~/main.server"
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
-};
+  return [{ title: "New React Router App" }, { name: "description", content: "Welcome to React Router!" }]
+}
 
-console.log(RR.a);
+export const loader = Loader.unwrapEffect(
+  Effect.gen(function* () {
+    const sessionCookie = Cookie.make("wozza_session", Schema.parseJson(Schema.Struct({ name: Schema.String })), {
+      httpOnly: true,
+      secure: true,
+      path: "/",
+      maxAge: "365 days"
+    })
 
-export default function Index() {
+    return HttpRequest.parseSearchParams(Schema.Struct({ name: Schema.optional(Schema.String) })).pipe(
+      // Effect.zipRight(Effect.fail(new Error("fail from home loader"))),
+      Effect.zipRight(HttpResponse.setCookie(sessionCookie, { name: "steve" })),
+      Effect.zipRight(HttpResponse.setHeader("x-steve", "steve-header")),
+      Effect.map(() => Result.Ok({ n: 1, s: "s", date: new Date() })),
+      Effect.mapError(() => Result.Error({ error: "Errororror!" }, { status: 400 })),
+      Effect.merge
+    )
+  })
+)
+
+export default function Index({ loaderData }: Route.ComponentProps) {
+  const { revalidate } = useRevalidator()
+
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="flex flex-col items-center gap-16">
@@ -18,23 +38,17 @@ export default function Index() {
           <h1 className="leading text-2xl font-bold text-gray-800 dark:text-gray-100">
             Welcome to <span className="sr-only">React Router</span>
           </h1>
+          <button onClick={() => revalidate()} type="button">
+            Revalidate
+          </button>
+          <pre>{JSON.stringify({ loaderData }, null, 2)}</pre>
           <div className="w-[500px] max-w-[100vw] p-4">
-            <img
-              src="/logo-light.svg"
-              alt="React Router"
-              className="block w-full dark:hidden"
-            />
-            <img
-              src="/logo-dark.svg"
-              alt="React Router"
-              className="hidden w-full dark:block"
-            />
+            <img src="/logo-light.svg" alt="React Router" className="block w-full dark:hidden" />
+            <img src="/logo-dark.svg" alt="React Router" className="hidden w-full dark:block" />
           </div>
         </header>
         <nav className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-gray-200 p-6 dark:border-gray-700">
-          <p className="leading-6 text-gray-700 dark:text-gray-200">
-            What&apos;s next?
-          </p>
+          <p className="leading-6 text-gray-700 dark:text-gray-200">What&apos;s next?</p>
           <ul>
             {resources.map(({ href, text, icon }) => (
               <li key={href}>
@@ -53,7 +67,7 @@ export default function Index() {
         </nav>
       </div>
     </div>
-  );
+  )
 }
 
 const resources = [
@@ -75,7 +89,7 @@ const resources = [
           strokeLinecap="round"
         />
       </svg>
-    ),
+    )
   },
   {
     href: "https://rmx.as/discord",
@@ -94,6 +108,6 @@ const resources = [
           strokeWidth="1.5"
         />
       </svg>
-    ),
-  },
-];
+    )
+  }
+]
