@@ -33,24 +33,3 @@ export default function App() {
     </html>
   )
 }
-
-export function ErrorBoundary() {
-  const error = useRouteError()
-
-  const isErrorResponse = isRouteErrorResponse(error)
-
-  return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        <pre>{JSON.stringify({ name: "root", isErrorResponse, error }, null, 2)}</pre>
-        <Scripts />
-      </body>
-    </html>
-  )
-}

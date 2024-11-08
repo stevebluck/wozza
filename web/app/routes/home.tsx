@@ -1,5 +1,5 @@
 import * as Route from "./+types.home"
-import { useRevalidator, type MetaFunction } from "react-router"
+import { isRouteErrorResponse, useRevalidator, useRouteError, type MetaFunction } from "react-router"
 import { Effect, Schema } from "effect"
 import { Cookie, HttpRequest, HttpResponse, Result } from "@wozza/react-router-effect"
 import { Loader } from "~/main.server"
@@ -10,19 +10,18 @@ export const meta: MetaFunction = () => {
 
 export const loader = Loader.unwrapEffect(
   Effect.gen(function* () {
-    const sessionCookie = Cookie.make("wozza_session", Schema.parseJson(Schema.Struct({ name: Schema.String })), {
-      httpOnly: true,
-      secure: true,
-      path: "/",
-      maxAge: "365 days"
-    })
+    const sessionCookie = yield* Cookie.make(
+      "wozza_session",
+      Schema.parseJson(Schema.Struct({ name: Schema.String })),
+      { httpOnly: true, path: "/", maxAge: "365 days" }
+    )
 
-    return HttpRequest.parseSearchParams(Schema.Struct({ name: Schema.optional(Schema.String) })).pipe(
-      // Effect.zipRight(Effect.fail(new Error("fail from home loader"))),
-      Effect.zipRight(HttpResponse.setCookie(sessionCookie, { name: "steve" })),
-      Effect.zipRight(HttpResponse.setHeader("x-steve", "steve-header")),
-      Effect.map(() => Result.Ok({ n: 1, s: "s", date: new Date() })),
-      Effect.mapError(() => Result.Error({ error: "Errororror!" }, { status: 400 })),
+    // return Effect.void.pipe(
+    return HttpRequest.parseCookie(sessionCookie).pipe(
+      Effect.tap(HttpResponse.setCookie(sessionCookie, { name: "steve" })),
+      Effect.tap(HttpResponse.setHeader("x-steve", "steve-header")),
+      Effect.map((data) => Result.Json(data)),
+      Effect.mapError((e) => Result.Exception(e)),
       Effect.merge
     )
   })
@@ -68,6 +67,14 @@ export default function Index({ loaderData }: Route.ComponentProps) {
       </div>
     </div>
   )
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError()
+
+  const isErrorResponse = isRouteErrorResponse(error)
+
+  return <pre>{JSON.stringify({ name: "root", isErrorResponse, error }, null, 2)}</pre>
 }
 
 const resources = [

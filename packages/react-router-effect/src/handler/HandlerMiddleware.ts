@@ -1,39 +1,23 @@
 import { Effect } from "effect"
 import { HttpServerRequest } from "@effect/platform/HttpServerRequest"
 import { Result } from "./Result"
-import { HttpResponseState } from "../http/HttpResponseState"
-import { EffectHandler } from "./Handler"
+import { Handler } from "./Handler"
 
-export const withLogger = <A, E>(handler: EffectHandler<A, E>) =>
+export const withLogger: Handler.Middleware = (handler) =>
   Effect.gen(function* () {
-    const response = yield* HttpResponseState
     const request = yield* HttpServerRequest
 
-    const result = yield* handler.pipe(
-      Effect.tapDefect((defect) =>
-        Effect.logInfo("http failed response sent. This would have caused the ErrorBoundary to be rendered.").pipe(
-          Effect.annotateLogs("defect", defect),
-          Effect.annotateLogs("http.method", request.method),
-          Effect.annotateLogs("http.status", 500)
-        )
-      )
-    )
-
-    const state = yield* response.get
+    const result = yield* handler
 
     yield* Result.match(result, {
-      Ok: () => Effect.logInfo("http response sent"),
-      Error: (e) =>
-        Effect.logInfo("http failed response sent. This would have caused the ErrorBoundary to be rendered.").pipe(
-          Effect.annotateLogs("http.body", e.error)
-        ),
-      Redirect: (r) =>
-        Effect.logInfo("http redirect response sent").pipe(Effect.annotateLogs("http.location", r.location)),
-      Exception: (e) => Effect.logInfo("http exception response sent", e.defect)
+      Json: () => Effect.logInfo("HTTP response"),
+      Redirect: (r) => Effect.logInfo("HTTP redirect").pipe(Effect.annotateLogs("http.location", r.location)),
+      Exception: (r) => Effect.logInfo("HTTP failed response", r.error)
     }).pipe(
+      Effect.annotateLogs("http.url", request.url),
       Effect.annotateLogs("http.method", request.method),
-      Effect.annotateLogs("http.status", result.init?.status || state.status)
+      Effect.annotateLogs("http.status", result.init.status)
     )
 
     return result
-  }).pipe(Effect.withLogSpan("http"))
+  })
