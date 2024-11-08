@@ -1,15 +1,22 @@
-import { Cookie, Handler, HandlerMiddleware } from "@wozza/react-router-effect"
-import { Config, Layer, Logger, LogLevel, Redacted } from "effect"
+import { Cookie, Handler, Middleware } from "@wozza/react-router-effect"
+import { Config, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
 
-const CookieConfig = Cookie.CookieConfig.layerConfig({
-  secrets: Config.array(Config.redacted("COOKIE_ENCRYPTION_SECRET")).pipe(
-    Config.withDefault<Array<Redacted.Redacted<string>>>([])
-  ),
-  secure: Config.nonEmptyString("NODE_ENV").pipe(Config.map((env) => env === "production"))
+const LoggerConfig = Config.all({
+  level: Config.withDefault(Config.logLevel("LOG_LEVEL"), LogLevel.All),
+  type: Config.literal("pretty", "json", "structured", "logFmt")("LOGGER_TYPE").pipe(Config.withDefault("json"))
 })
 
-const appLayer = Logger.pretty.pipe(Layer.merge(CookieConfig))
-
-export const Loader = Handler.make(appLayer, (handler) =>
-  handler.pipe(HandlerMiddleware.withLogger, Logger.withMinimumLogLevel(LogLevel.Debug))
+const AppLogger = LoggerConfig.pipe(
+  Effect.map(({ level, type }) => Logger[type].pipe(Layer.provide(Logger.minimumLogLevel(level)))),
+  Layer.unwrapEffect
 )
+
+const AppLayer = Layer.mergeAll(AppLogger, Cookie.CookieConfig.default)
+
+const runtime = ManagedRuntime.make(AppLayer)
+
+export const Loader = Handler.make({
+  runtime,
+  requestLayer: Layer.empty,
+  middleware: Middleware.compose(Middleware.withLogger)
+})

@@ -4,31 +4,33 @@ import { data, LoaderFunctionArgs, redirect, UNSAFE_DataWithResponseInit } from 
 
 import { Result } from "./Result"
 import { HttpResponseState } from "../http/HttpResponseState"
+import { Scope } from "effect/Scope"
 
-type RequestContext = HttpServerRequest.HttpServerRequest | HttpResponseState
+export type RequestContext<R> = HttpServerRequest.HttpServerRequest | HttpResponseState | Scope | R
 
-export type Handler<A, E, R = never> = Effect.Effect<Result<A, E>, never, Handler.Context<R>>
+export type Handler<A, E, R = never> = Effect.Effect<Result<A, E>, never, RequestContext<R>>
 
-export namespace Handler {
-  export type Context<R> = RequestContext | R
+export type Middleware<R> = <A, E>(handler: Handler<A, E, R>) => Handler<A, E, R>
 
-  export type Middleware = <A, E, R = never>(handler: Handler<A, E, R>) => Handler<A, E, R>
+export type RequestLayer<Out, E, In> = Layer.Layer<Out, E, RequestContext<In>>
+
+type Setup<R, ER, RR, ERR> = {
+  runtime: ManagedRuntime.ManagedRuntime<R, ER>
+  requestLayer: RequestLayer<RR, ERR, R>
+  middleware: Middleware<R | RR>
 }
 
-const fromLayer = <R, ER>(layer: Layer.Layer<R, ER>, middleware: Handler.Middleware) => {
-  const runtime = ManagedRuntime.make(layer)
-
-  const makeHandler = <A, E>(handler: Handler<A, E, R>) => {
+const initialise =
+  <R, ER, RR, ERR>(setup: Setup<R, ER, RR, ERR>) =>
+  <A, E>(handler: Handler<A, E, R | RR>) => {
     const app = Effect.gen(function* () {
-      const responseState = yield* HttpResponseState
-
       const result = yield* handler.pipe(
         Effect.catchAllDefect((defect) => Effect.succeed(Result.Exception(defect, { status: 500 }))),
-        middleware
+        setup.middleware
       )
 
+      const responseState = yield* HttpResponseState
       const state = yield* responseState.get
-
       const headers = Headers.merge(state.init.headers)(Headers.fromInput(result.init?.headers))
 
       return Result.match(result, {
@@ -40,6 +42,7 @@ const fromLayer = <R, ER>(layer: Layer.Layer<R, ER>, middleware: Handler.Middlew
 
     return (args: LoaderFunctionArgs): Promise<UNSAFE_DataWithResponseInit<A>> => {
       const runnable = app.pipe(
+        Effect.provide(setup.requestLayer),
         Effect.provideServiceEffect(HttpResponseState, HttpResponseState.make),
         Effect.provideService(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(args.request)),
         Effect.provideServiceEffect(
@@ -49,62 +52,79 @@ const fromLayer = <R, ER>(layer: Layer.Layer<R, ER>, middleware: Handler.Middlew
             Effect.orDie
           )
         ),
+        Effect.scoped,
         Effect.withLogSpan("http")
       )
 
-      const result = runtime.runPromise(runnable).then(Either.getOrThrowWith(identity))
-
-      return result
+      return setup.runtime.runPromise(runnable).then(Either.getOrThrowWith(identity))
     }
   }
 
-  return {
-    runtime,
-    makeHandler
+export const effect =
+  <R, ER, RR, ERR>(setup: Setup<R, ER, RR, ERR>) =>
+  <A, E>(handler: Handler<A, E, R | RR>) => {
+    const makeHandler = initialise(setup)
+    return makeHandler(handler)
   }
-}
 
-const effect = <R, ER>(layer: Layer.Layer<R, ER>, middleware: Handler.Middleware) => {
-  const { makeHandler } = fromLayer(layer, middleware)
-
-  return <A, E>(handler: Handler<A, E, R>) => makeHandler(handler)
-}
-
-const unwrapEffect = <R, ER>(layer: Layer.Layer<R, ER>, middleware: Handler.Middleware) => {
-  const { runtime, makeHandler } = fromLayer(layer, middleware)
-
-  return <A, E>(effect: Effect.Effect<Handler<A, E, R>, never, R>) => {
-    const handler = runtime.runPromise(effect)
-
-    return (args: LoaderFunctionArgs) => handler.then((handler) => makeHandler(handler)(args))
+export const unwrapEffect =
+  <R, ER, RR, ERR>(setup: Setup<R, ER, RR, ERR>) =>
+  <A, E>(effect: Effect.Effect<Handler<A, E, RR>, never, R>) => {
+    const promise = setup.runtime.runPromise(effect)
+    const makeHandler = initialise(setup)
+    return (args: LoaderFunctionArgs) => promise.then((handler) => makeHandler(handler)(args))
   }
-}
 
-export const make = <R, ER>(layer: Layer.Layer<R, ER>, middleware: Handler.Middleware) => ({
+/**
+ * @description Creates a request handler factory with the given setup configuration.
+ *
+ * @param setup Configuration object containing:
+ *     - `runtime`: A ManagedRuntime for executing effects
+ *     - `requestLayer`: A layer providing request-scoped dependencies
+ *     - `middleware`: Request middleware for transforming handlers
+ *
+ * @returns An object with two methods:
+ *     - `effect`: Creates a handler from an Effect that runs per-request
+ *     - `unwrapEffect`: Creates a handler from an Effect that runs once during initialization
+ *
+ * @example
+ * ```ts
+ * const Loader = Handler.make({
+ *     runtime: Runtime.make(appLayer),
+ *     requestLayer: Layer.empty,
+ *     middleware: Middleware.compose(Middleware.withLogger, Middleware.withAuth)
+ * })
+ * ```
+ */
+export const make = <R, ER, RR, ERR>(setup: Setup<R, ER, RR, ERR>) => ({
   /**
-   * Creates a request handler from an Effect.
+   * @name effect
    *
-   * The Effect runs for each request, with access to the request context.
+   * @description
+   * Creates a React Router server loader or action from an Effect.
    *
-   * Example:
+   * @example
    * ```ts
-   * const handler = Handler.effect(Effect.gen(function* () {
+   * const handler = Loader.effect(Effect.gen(function* () {
    *   const request = yield* HttpServerRequest.HttpServerRequest
    *   const result = yield* processRequest(request)
    *   return Result.Ok(result)
    * }))
    * ```
    */
-  effect: effect(layer, middleware),
+  effect: effect(setup),
   /**
-   * Creates a request handler from an Effect that produces another Effect.
+   * @name unwrapEffect
    *
-   * The outer Effect runs once during initialization (useful for expensive setup),
+   * @description
+   * Creates a request React Router server loader or action from an Effect that initialises resources.
+   *
+   * The outer Effect runs once during initialisation which is useful for setup tasks,
    * while the inner Effect runs for each request.
    *
-   * Example:
+   * @example
    * ```ts
-   * const handler = Handler.unwrapEffect(Effect.gen(function* () {
+   * const handler = Loader.unwrapEffect(Effect.gen(function* () {
    *   // Runs once on initialization
    *   const db = yield* initializeDatabase()
    *
@@ -116,5 +136,5 @@ export const make = <R, ER>(layer: Layer.Layer<R, ER>, middleware: Handler.Middl
    * }))
    * ```
    */
-  unwrapEffect: unwrapEffect(layer, middleware)
+  unwrapEffect: unwrapEffect(setup)
 })

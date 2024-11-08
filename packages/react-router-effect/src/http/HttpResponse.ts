@@ -11,7 +11,6 @@ export const setCookie = <A>(cookie: Cookie<A>, value: A): Effect.Effect<void, n
     const state = yield* HttpResponseState
     yield* cookie.serialize(value).pipe(
       Effect.tap((cookie) => Ref.update(state, (state) => state.setCookie(cookie))),
-      Effect.tapError((error) => Effect.logError("failed to set cookie", error)),
       Effect.orDie
     )
   })
