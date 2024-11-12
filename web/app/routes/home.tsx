@@ -1,29 +1,29 @@
 import * as Route from "./+types.home"
 import { isRouteErrorResponse, useRevalidator, useRouteError, type MetaFunction } from "react-router"
-import { Effect, Schema } from "effect"
-import { Cookie, HttpResponse, Result } from "@wozza/react-router-effect"
+import { Effect } from "effect"
+import { HttpResponse, Result } from "@wozza/react-router-effect"
 import { Loader } from "~/main.server"
+import { Sessions } from "~/sessions/Sessions"
 
 export const meta: MetaFunction = () => {
   return [{ title: "New React Router App" }, { name: "description", content: "Welcome to React Router!" }]
 }
 
-export const loader = Effect.gen(function* () {
-  const sessionCookie = yield* Cookie.make("wozza_session", Schema.parseJson(Schema.Struct({ name: Schema.String })), {
-    httpOnly: true,
-    path: "/",
-    maxAge: "365 days"
-  })
-
-  return Effect.succeed({ name: "steve" }).pipe(
-    Effect.tap(HttpResponse.setCookie(sessionCookie, { name: "steve" })),
+export const loader = Loader.fromEffect(
+  Effect.succeed({ name: "steve" }).pipe(
     Effect.tap(HttpResponse.setHeader("x-steve", "steve-header")),
     Effect.map((data) => Result.Json(data)),
     Effect.mapError((e) => Result.Exception(e)),
     Effect.merge,
-    Effect.tap(() => Effect.logDebug("loader log"))
+    Effect.tap(() => Effect.logDebug("loader log")),
+    Effect.tap(() =>
+      Sessions.pipe(
+        Effect.flatMap((s) => s.get),
+        Effect.tap(Effect.log)
+      )
+    )
   )
-}).pipe(Loader.unwrapEffect)
+)
 
 export default function Index({ loaderData }: Route.ComponentProps) {
   const { revalidate } = useRevalidator()

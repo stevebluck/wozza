@@ -16,6 +16,12 @@ class State {
     return new State(cookies, this.headers, this.status)
   }
 
+  removeCookie = <A>(cookie: Cookies.Cookie): State => {
+    const cookies = Cookies.remove(cookie.name)(this.cookies)
+
+    return new State(cookies, this.headers, this.status)
+  }
+
   setHeader = (name: string, value: string): State => {
     return new State(this.cookies, Headers.set(name, value)(this.headers), this.status)
   }

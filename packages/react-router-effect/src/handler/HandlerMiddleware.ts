@@ -1,13 +1,13 @@
 import { Effect } from "effect"
 import { HttpServerRequest } from "@effect/platform/HttpServerRequest"
-import { Result } from "./Result"
 import { Handler } from "./Handler"
+import * as Result from "./Result"
 
 /**
  * @name withLogger
  *
  * @description
- * Middleware that adds structured logging for HTTP requests and responses
+ * Middleware that adds log annotations for HTTP requests and responses
  *
  * Logs the following data points:
  * - Request URL, method, status
@@ -32,8 +32,3 @@ export const withLogger = <A, E, R>(handler: Handler<A, E, R>): Handler<A, E, R>
 
     return result
   })
-
-export const compose =
-  <A, R, E>(...middlewares: Array<(handler: Handler<A, E, R>) => Handler<A, E, R>>) =>
-  (handler: Handler<A, E, R>): Handler<A, E, R> =>
-    middlewares.reduce((acc, middleware) => acc.pipe(middleware), handler)

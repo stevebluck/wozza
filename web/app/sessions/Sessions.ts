@@ -1,7 +1,16 @@
-import { Context, Effect } from "effect"
+import { Context, Schema } from "effect"
+import { RequestSession, SessionState } from "./RequestSession"
 
-interface Sessions {}
+export interface Session {
+  token: string
+  theme: "light" | "dark"
+}
 
-export class CookieSessions extends Context.Tag("CookieSessions")<CookieSessions, Sessions>() {
-  static make = Effect.gen(function* () {})
+export const SessionSchema: Schema.Schema<Session> = Schema.Struct({
+  token: Schema.String,
+  theme: Schema.Literal("light", "dark")
+})
+
+export class Sessions extends Context.Tag("Sessions")<Sessions, RequestSession<any>>() {
+  static make = <T>(state: SessionState<T>) => RequestSession.make<T>(state)
 }

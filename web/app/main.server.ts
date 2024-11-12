@@ -1,22 +1,61 @@
-import { Cookie, Handler, Middleware } from "@wozza/react-router-effect"
-import { Config, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
+import { Handler, Middleware } from "@wozza/react-router-effect"
+import { runtime } from "./Runtime"
+import * as CookieSessions from "./sessions/CookieSessions"
+import { Context, Effect, Ref, Schema } from "effect"
+import { SessionSchema } from "./sessions/Sessions"
+import { RequestSession } from "./sessions/RequestSession"
 
-const LoggerConfig = Config.all({
-  level: Config.withDefault(Config.logLevel("LOG_LEVEL"), LogLevel.All),
-  type: Config.literal("pretty", "json", "structured", "logFmt")("LOGGER_TYPE").pipe(Config.withDefault("json"))
-})
+const middleware = <A, E, R>(handler: Handler.Handler<A, E, R>) =>
+  handler.pipe(Middleware.withLogger, CookieSessions.middleware(Schema.parseJson(SessionSchema)))
 
-const AppLogger = LoggerConfig.pipe(
-  Effect.map(({ level, type }) => Logger[type].pipe(Layer.provide(Logger.minimumLogLevel(level)))),
-  Layer.unwrapEffect
-)
+export const Loader = {
+  fromEffect: Handler.fromEffect({ runtime, middleware }),
+  unwrapEffect: Handler.unwrapEffect({ runtime, middleware })
+}
 
-const AppLayer = Layer.mergeAll(AppLogger, Cookie.CookieConfig.default)
+interface SessionData {
+  name: string
+}
 
-const runtime = ManagedRuntime.make(AppLayer)
+class Sessions<T> {
+  static make = <T>(data: T): Effect.Effect<Sessions<T>> => {
+    return Effect.gen(function* () {
+      const ref = yield* Ref.make<T>(data)
+      return new Sessions(ref)
+    })
+  }
 
-export const Loader = Handler.make({
-  runtime,
-  requestLayer: Layer.empty,
-  middleware: Middleware.compose(Middleware.withLogger)
-})
+  constructor(private readonly data: Ref.Ref<T>) {}
+}
+
+interface Handler<T> {
+  (sessions: Sessions<T>): string
+}
+
+const sessionFromCookie = <T>(handler: Handler<T>): Effect.Effect<string> =>
+  Effect.gen(function* () {
+    const dataFromCookie = {} as T
+    const sessions = yield* Sessions.make(dataFromCookie)
+
+    return handler(sessions)
+  })
+
+const sessionFromDatabase = <T>(handler: Handler<T>): Effect.Effect<string> =>
+  Effect.gen(function* () {
+    const dataFromDatabase = {} as T
+    const sessions = yield* Sessions.make(dataFromDatabase)
+
+    return handler(sessions)
+  })
+
+export class AppSessions extends Context.Tag("AppSessions")<AppSessions, Sessions<SessionData>>() {}
+
+// const program2 = Effect.gen(function* () {
+//   const sessions = yield* sessionFromCookie<SessionData>(() => "")
+
+//   handlerEffect.pipe(Effect.provideService(AppSessions, sessions))
+// })
+
+// const handlerEffect = Effect.gen(function* () {
+//   const sessions = yield* AppSessions
+// })
