@@ -1,8 +1,8 @@
 import { Context, Effect } from "effect"
 import { HttpServerRequest } from "@effect/platform/HttpServerRequest"
 import { Handler } from "./Handler"
-import { SessionStorage } from "../sessions/SessionStorage"
-import { RequestSessions } from "../sessions/RequestSessions"
+import { CookieSessions } from "./CookieSessions"
+import { CookieSessions } from "./CookieSessions"
 import * as Result from "./Result"
 
 /**

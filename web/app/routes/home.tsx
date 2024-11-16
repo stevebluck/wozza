@@ -1,9 +1,10 @@
 import * as Route from "./+types.home"
 import { isRouteErrorResponse, useRevalidator, useRouteError, type MetaFunction } from "react-router"
 import { Effect } from "effect"
-import { HttpResponse, Result } from "@wozza/react-router-effect"
+import { Result } from "@wozza/react-router-effect"
 import { Loader } from "~/main.server"
 import { Sessions } from "~/services/Sessions"
+import { Token } from "@wozza/core"
 
 export const meta: MetaFunction = () => {
   return [{ title: "New React Router App" }, { name: "description", content: "Welcome to React Router!" }]
@@ -11,11 +12,16 @@ export const meta: MetaFunction = () => {
 
 export const loader = Loader.fromEffect(
   Effect.succeed({ name: "steve" }).pipe(
-    Effect.tap(HttpResponse.setHeader("x-steve", "steve-header")),
     Effect.map((data) => Result.Json(data)),
     Effect.mapError((e) => Result.Exception(e)),
     Effect.tap(() => Effect.logDebug("loader log")),
-    Effect.tap(() => Sessions),
+    Effect.tap(() =>
+      Sessions.mint({ token: Token.make("token"), user: { name: "steve" } }).pipe(
+        Effect.tapError(Effect.logError),
+        Effect.tap(Effect.log),
+        Effect.ignore
+      )
+    ),
     Effect.merge
   )
 )

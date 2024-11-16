@@ -6,7 +6,7 @@ export const setStatus = (status: number): Effect.Effect<void, never, HttpRespon
   return HttpResponseState.pipe(Effect.flatMap((state) => Ref.update(state, (s) => s.setStatus(status))))
 }
 
-export const setCookie = <A>(cookie: Cookie<A>, value: A): Effect.Effect<void, never, HttpResponseState> =>
+export const setCookie = <A, R>(cookie: Cookie<A, R>, value: A): Effect.Effect<void, never, HttpResponseState | R> =>
   Effect.gen(function* () {
     const state = yield* HttpResponseState
     yield* cookie.serialize(value).pipe(
@@ -15,7 +15,7 @@ export const setCookie = <A>(cookie: Cookie<A>, value: A): Effect.Effect<void, n
     )
   })
 
-export const unsetCookie = <A>(cookie: Cookie<A>): Effect.Effect<void, never, HttpResponseState> =>
+export const unsetCookie = <A, R>(cookie: Cookie<A, R>): Effect.Effect<void, never, HttpResponseState | R> =>
   Effect.gen(function* () {
     const state = yield* HttpResponseState
     yield* cookie.unset.pipe(Effect.tap((updated) => Ref.update(state, (state) => state.setCookie(updated))))

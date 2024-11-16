@@ -9,11 +9,11 @@ export const parseSearchParams = <I, O extends Record<string, string | ReadonlyA
   schema: Schema.Schema<I, O, R>
 ): Effect.Effect<I, ParseError, R | ParsedSearchParams> => HttpServerRequest.schemaSearchParams(schema)
 
-export const parseCookie = <A>(
-  cookie: Cookie<A>
-): Effect.Effect<A, ParseError | Cookies.CookiesError, HttpServerRequest.HttpServerRequest> =>
-  HttpServerRequest.schemaCookies(Schema.Struct({ [cookie.name]: Schema.String })).pipe(
-    Effect.flatMap((obj) => Cookies.makeCookie(cookie.name, obj[cookie.name], cookie.options)),
+export const parseCookie = <A, R>(
+  cookie: Cookie<A, R>
+): Effect.Effect<A, ParseError | Cookies.CookiesError, HttpServerRequest.HttpServerRequest | R> =>
+  HttpServerRequest.schemaCookies(Schema.Struct({ [cookie.settings.name]: Schema.String })).pipe(
+    Effect.flatMap((obj) => Cookies.makeCookie(cookie.settings.name, obj[cookie.settings.name], cookie.settings)),
     Effect.flatMap(cookie.parse)
   )
 
