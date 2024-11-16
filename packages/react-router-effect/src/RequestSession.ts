@@ -27,7 +27,7 @@ export const makeMiddleware =
     tag: Context.Tag<Id, RequestSession<SessionData>>,
     getCookie: Effect.Effect<Cookie<SessionData, CR>, MCE, MCR>
   ) =>
-  <A, E, R>(handler: Handler<A, E, R>) =>
+  <A, R>(handler: Handler<A, R>) =>
     Effect.gen(function* () {
       const cookie = yield* getCookie
 

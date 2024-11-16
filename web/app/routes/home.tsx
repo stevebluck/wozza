@@ -13,16 +13,7 @@ export const meta: MetaFunction = () => {
 export const loader = Loader.fromEffect(
   Effect.succeed({ name: "steve" }).pipe(
     Effect.map((data) => Result.Json(data)),
-    Effect.mapError((e) => Result.Exception(e)),
-    Effect.tap(() => Effect.logDebug("loader log")),
-    Effect.tap(() =>
-      Sessions.mint({ token: Token.make("token"), user: { name: "steve" } }).pipe(
-        Effect.tapError(Effect.logError),
-        Effect.tap(Effect.log),
-        Effect.ignore
-      )
-    ),
-    Effect.merge
+    Effect.tap(() => Sessions.mint({ token: Token.make("token"), user: { name: "steve" } }))
   )
 )
 

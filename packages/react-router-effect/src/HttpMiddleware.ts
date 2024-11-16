@@ -1,8 +1,6 @@
-import { Context, Effect } from "effect"
+import { Effect } from "effect"
 import { HttpServerRequest } from "@effect/platform/HttpServerRequest"
 import { Handler } from "./Handler"
-import { CookieSessions } from "./CookieSessions"
-import { CookieSessions } from "./CookieSessions"
 import * as Result from "./Result"
 
 /**
@@ -16,7 +14,7 @@ import * as Result from "./Result"
  * - Redirect location (for redirects)
  * - Error details (for exceptions)
  */
-export const withLogger = <A, E, R>(handler: Handler<A, E, R>): Handler<A, E, R> =>
+export const withLogger = <A, R>(handler: Handler<A, R>): Handler<A, R> =>
   Effect.gen(function* () {
     const request = yield* HttpServerRequest
 
@@ -24,8 +22,7 @@ export const withLogger = <A, E, R>(handler: Handler<A, E, R>): Handler<A, E, R>
 
     yield* Result.match(result, {
       Json: () => Effect.logInfo("HTTP response"),
-      Redirect: (r) => Effect.logInfo("HTTP redirect").pipe(Effect.annotateLogs("http.location", r.location)),
-      Exception: (r) => Effect.logInfo("HTTP failed response", r.error)
+      Redirect: (r) => Effect.logInfo("HTTP redirect").pipe(Effect.annotateLogs("http.location", r.location))
     }).pipe(
       Effect.annotateLogs("http.url", request.url),
       Effect.annotateLogs("http.method", request.method),

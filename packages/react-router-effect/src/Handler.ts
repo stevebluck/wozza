@@ -1,5 +1,5 @@
 import { Headers, HttpServerRequest } from "@effect/platform"
-import { Effect, Either, identity, ManagedRuntime } from "effect"
+import { Cause, Effect, Either, Exit, identity, ManagedRuntime } from "effect"
 import { data, LoaderFunctionArgs, redirect, UNSAFE_DataWithResponseInit } from "react-router"
 import { HttpResponseState } from "./HttpResponseState"
 import { Scope } from "effect/Scope"
@@ -7,24 +7,21 @@ import * as Result from "./Result"
 
 export type RequestContext = HttpServerRequest.HttpServerRequest | HttpResponseState | Scope
 
-export type Handler<A, E = never, R = never> = Effect.Effect<Result.Result<A>, E, R | RequestContext>
+export type Handler<A, R = never> = Effect.Effect<Result.Result<A>, never, R | RequestContext>
 
 export type LoaderHandler<A> = (args: LoaderFunctionArgs) => Promise<UNSAFE_DataWithResponseInit<A>>
 
-type Setup<RR, RE, A, E, R extends RR, AM, EM, Provided> = {
+type Setup<RR, RE, A, R, AM, Provided> = {
   runtime: ManagedRuntime.ManagedRuntime<RR, RE>
-  middleware: (self: Handler<A, E, R>) => Handler<AM, EM, Exclude<R, Provided>>
+  middleware: (self: Handler<A, R>) => Handler<AM, Exclude<R, Provided>>
 }
 
 export const fromEffect =
-  <RR, RE, A, E, R extends RR, AM, EM, Provided>(setup: Setup<RR, RE, A, E, R, AM, EM, Provided>) =>
-  (handler: Handler<A, E, R | Provided>): LoaderHandler<AM> => {
+  <RR, RE, A, R extends RR, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
+  (handler: Handler<A, R | Provided>): LoaderHandler<AM> => {
     const app = Effect.gen(function* () {
-      const result = yield* handler.pipe(
-        // @ts-expect-error
-        Effect.catchAllDefect((defect) => Effect.succeed(Result.Exception(defect, { status: 500 }))),
-        setup.middleware
-      )
+      // @ts-expect-error
+      const result = yield* setup.middleware(handler)
 
       const responseState = yield* HttpResponseState
       const state = yield* responseState.get
@@ -32,8 +29,7 @@ export const fromEffect =
 
       return Result.match(result, {
         Json: (r) => Either.right(data(r.value, { ...r.init, headers })),
-        Redirect: (r) => Either.left(redirect(r.location, { ...r.init, headers })),
-        Exception: (r) => Either.left(new Response("Internal Server Error", { ...r.init, headers }))
+        Redirect: (r) => Either.left(redirect(r.location, { ...r.init, headers }))
       })
     })
 
@@ -52,15 +48,29 @@ export const fromEffect =
         Effect.withLogSpan("http")
       )
 
-      return setup.runtime.runPromise(runnable).then(Either.getOrThrowWith(identity))
+      return run(setup.runtime, runnable)
     }
   }
 
 export const unwrapEffect =
-  <RR, RE, A, E, R extends RR, AM, EM, Provided>(setup: Setup<RR, RE, A, E, R, AM, EM, Provided>) =>
-  (handler: Effect.Effect<Handler<A, E, R | Provided>, never, RR>): LoaderHandler<AM> => {
+  <RR, RE, A, R extends RR, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
+  (handler: Effect.Effect<Handler<A, R | Provided>, never, RR>): LoaderHandler<AM> => {
     const handlerPromise = setup.runtime.runPromise(handler)
     return async (args) => {
       return handlerPromise.then((app) => fromEffect(setup)(app)(args))
     }
   }
+
+const run = <A, E, R, RE>(
+  runtime: ManagedRuntime.ManagedRuntime<R, RE>,
+  handler: Effect.Effect<Either.Either<A, E>, never, R>
+) =>
+  runtime.runPromiseExit(handler).then(
+    Exit.match({
+      onFailure: (cause) => {
+        console.error("Runtime error", Cause.pretty(cause))
+        throw new Response("Internal Server Error", { status: 500 })
+      },
+      onSuccess: Either.getOrThrowWith(identity)
+    })
+  )
