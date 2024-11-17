@@ -1,27 +1,16 @@
 import { Config, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
 import { Users } from "./services/Users"
 import { SessionCookie } from "./services/Sessions"
+import { NodeFileSystem } from "@effect/platform-node"
+import { Path } from "@effect/platform"
 
-const LoggerLayer = Layer.unwrapEffect(
-  Effect.gen(function* () {
-    const config = yield* Config.all({
-      level: Config.withDefault(Config.logLevel("LOG_LEVEL"), LogLevel.All),
-      type: Config.literal("pretty", "json", "structured", "logFmt")("LOGGER_TYPE").pipe(Config.withDefault("json"))
-    })
-
-    return Layer.provide(Logger[config.type], Logger.minimumLogLevel(config.level))
-  })
-)
-
-const baseConfig = {
-  databaseUrl: Config.nonEmptyString("DATABASE_URL")
-}
+const DATABASE_URL = Config.nonEmptyString("DATABASE_URL")
 
 const Production = Layer.unwrapEffect(
   Effect.gen(function* () {
     const config = yield* Config.all({
       mode: Config.literal("Production")("MODE"),
-      databaseUrl: baseConfig.databaseUrl
+      databaseUrl: DATABASE_URL
     })
 
     yield* Effect.logInfo(`Running in mode: ${config.mode}`)
@@ -34,7 +23,7 @@ const DevPersisted = Layer.unwrapEffect(
   Effect.gen(function* () {
     const config = yield* Config.all({
       mode: Config.literal("DevPersisted")("MODE"),
-      databaseUrl: baseConfig.databaseUrl
+      databaseUrl: DATABASE_URL
     })
 
     yield* Effect.logInfo(`Running in mode: ${config.mode}`)
@@ -55,13 +44,26 @@ const DevInMemory = Layer.unwrapEffect(
   })
 )
 
-const AppLayer = SessionCookie.layer.pipe(
+const LoggerLayer = Layer.unwrapEffect(
+  Effect.gen(function* () {
+    const config = yield* Config.all({
+      level: Config.withDefault(Config.logLevel("LOG_LEVEL"), LogLevel.All),
+      type: Config.literal("pretty", "json", "structured", "logFmt")("LOGGER_TYPE").pipe(Config.withDefault("json"))
+    })
+
+    return Layer.provide(Logger[config.type], Logger.minimumLogLevel(config.level))
+  })
+)
+
+const AppLayer = Layer.mergeAll(SessionCookie.layer).pipe(
   Layer.provideMerge(
     Production.pipe(
       Layer.orElse(() => DevPersisted),
       Layer.orElse(() => DevInMemory)
     )
   ),
+  Layer.merge(Path.layer),
+  Layer.merge(NodeFileSystem.layer),
   Layer.provide(LoggerLayer)
 )
 

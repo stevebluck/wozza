@@ -5,7 +5,10 @@
   "sideEffects": false,
   "type": "module",
   "exports": {
-    ".": "./index.js"
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    }
   },
   "scripts": {
     "check": "tsc"
@@ -14,10 +17,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "nanoid": "^5.0.8",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
-    "typescript": "catalog:",
-    "prettier": "catalog:"
+    "prettier": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -16,7 +16,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "@wozza/prelude": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",

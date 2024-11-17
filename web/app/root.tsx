@@ -1,4 +1,4 @@
-import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useRouteError } from "react-router"
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router"
 import type { LinksFunction } from "react-router"
 
 import "./app.css"
