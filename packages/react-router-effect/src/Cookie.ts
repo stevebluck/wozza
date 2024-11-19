@@ -1,4 +1,4 @@
-import { Cookies as PlatformCookies } from "@effect/platform"
+import { Cookies, HttpServerRequest, Cookies as PlatformCookies } from "@effect/platform"
 import { Duration, Effect, Redacted, Schema } from "effect"
 import { ParseError } from "effect/ParseResult"
 import { createCookie } from "react-router"
@@ -10,9 +10,9 @@ export type Settings<A, R> = PlatformCookies.Cookie["options"] & {
 }
 
 export interface Cookie<A, R = never> {
-  parse: (cookie: PlatformCookies.Cookie) => Effect.Effect<A, ParseError, R>
-  serialize: (value: A) => Effect.Effect<PlatformCookies.Cookie, ParseError, R>
-  unset: Effect.Effect<PlatformCookies.Cookie>
+  parse: Effect.Effect<A, ParseError, R | HttpServerRequest.HttpServerRequest>
+  serialize: (value: A) => Effect.Effect<string, ParseError, R>
+  unset: Effect.Effect<string>
   settings: Settings<A, R>
 }
 
@@ -28,7 +28,7 @@ export const make = <A, R = never>(settings: Settings<A, R>): Effect.Effect<Cook
     const optionsSecrets = options?.secrets || []
     const secrets = optionsSecrets.map(Redacted.value)
 
-    const cookie = createCookie(name, {
+    const rrCookie = createCookie(name, {
       ...options,
       secrets,
       maxAge: options?.maxAge ? Duration.toSeconds(options.maxAge) : undefined,
@@ -37,27 +37,20 @@ export const make = <A, R = never>(settings: Settings<A, R>): Effect.Effect<Cook
 
     const serialize = (value: A) => {
       return encode(value).pipe(
-        Effect.andThen((value) => cookie.serialize(value)),
-        Effect.map(PlatformCookies.fromSetCookie),
-        Effect.flatMap(PlatformCookies.get(name)),
-        Effect.catchTags({
-          NoSuchElementException: Effect.die,
-          UnknownException: Effect.die
-        })
+        Effect.andThen((value) => rrCookie.serialize(value)),
+        Effect.catchTags({ UnknownException: Effect.die })
       )
     }
 
-    const parse = (c: PlatformCookies.Cookie) =>
-      Effect.promise(() => cookie.parse(`${name}=${c.value}`) as Promise<string>).pipe(
-        Effect.orDie,
-        Effect.flatMap(decode)
-      )
-
-    const unset = Effect.promise(() => cookie.serialize({}, { ...options, maxAge: 0 })).pipe(
-      Effect.map(PlatformCookies.fromSetCookie),
-      Effect.flatMap(PlatformCookies.get(name)),
-      Effect.orDie
+    const parse = HttpServerRequest.schemaCookies(Schema.Struct({ [settings.name]: Schema.String })).pipe(
+      Effect.flatMap((obj) => Cookies.makeCookie(settings.name, obj[settings.name], settings)),
+      Effect.map((cookie) => Cookies.toCookieHeader(Cookies.fromIterable([cookie]))),
+      Effect.andThen(rrCookie.parse),
+      Effect.catchTags({ UnknownException: Effect.die, CookieError: Effect.die }),
+      Effect.flatMap(decode)
     )
+
+    const unset = Effect.promise(() => rrCookie.serialize({}, { ...options, maxAge: 0 }))
 
     return {
       parse,

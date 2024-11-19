@@ -1,26 +1,64 @@
-import { Effect, Ref } from "effect"
+import { Cookies, Headers } from "@effect/platform"
+import { Context, Effect, Ref } from "effect"
 import { Cookie } from "./Cookie"
-import { HttpResponseState } from "./HttpResponseState"
 
-export const setStatus = (status: number): Effect.Effect<void, never, HttpResponseState> => {
-  return HttpResponseState.pipe(Effect.flatMap((state) => Ref.update(state, (s) => s.setStatus(status))))
+class State {
+  static make = Effect.gen(function* () {
+    const cookies = yield* Ref.make<Cookies.Cookies>(Cookies.empty)
+    const headers = yield* Ref.make<Headers.Headers>(Headers.empty)
+    const status = yield* Ref.make<number>(200)
+    return new State(cookies, headers, status)
+  })
+
+  constructor(
+    public readonly cookies: Ref.Ref<Cookies.Cookies>,
+    public readonly headers: Ref.Ref<Headers.Headers>,
+    public readonly status: Ref.Ref<number>
+  ) {}
+
+  setCookie = <A, R>(cookie: Cookie<A, R>, value: A): Effect.Effect<void, never, R> => {
+    return cookie.serialize(value).pipe(
+      Effect.map(Cookies.fromSetCookie),
+      Effect.flatMap(Cookies.get(cookie.settings.name)),
+      Effect.tap((cookie) => Ref.update(this.cookies, Cookies.setCookie(cookie))),
+      Effect.ignoreLogged
+    )
+  }
+
+  unsetCookie = <A, R>(cookie: Cookie<A, R>): Effect.Effect<void, never, R> => {
+    return cookie.unset.pipe(
+      Effect.map(Cookies.fromSetCookie),
+      Effect.flatMap(Cookies.get(cookie.settings.name)),
+      Effect.tap((updated) => Ref.update(this.cookies, Cookies.setCookie(updated))),
+      Effect.ignoreLogged
+    )
+  }
+
+  setHeader = (name: string, value: string): Effect.Effect<void> => {
+    return Ref.update(this.headers, Headers.set(name, value))
+  }
+
+  setStatus = (status: number): Effect.Effect<void> => {
+    return Ref.set(this.status, status)
+  }
+
+  get init(): Effect.Effect<{ headers: Headers.Headers; status: number }> {
+    return Effect.all({
+      headers: this.headers.get,
+      cookies: this.cookies.get,
+      status: this.status.get
+    }).pipe(
+      Effect.map(({ headers, cookies, status }) => {
+        const setCookie = Headers.fromInput({ "set-cookie": Cookies.toSetCookieHeaders(cookies) })
+        return {
+          headers: Cookies.isEmpty(cookies) ? headers : Headers.merge(headers, setCookie),
+          status
+        }
+      })
+    )
+  }
 }
 
-export const setCookie = <A, R>(cookie: Cookie<A, R>, value: A): Effect.Effect<void, never, HttpResponseState | R> =>
-  Effect.gen(function* () {
-    const state = yield* HttpResponseState
-    yield* cookie.serialize(value).pipe(
-      Effect.tap((serialised) => Ref.update(state, (state) => state.setCookie(serialised))),
-      Effect.orDie
-    )
-  })
-
-export const unsetCookie = <A, R>(cookie: Cookie<A, R>): Effect.Effect<void, never, HttpResponseState | R> =>
-  Effect.gen(function* () {
-    const state = yield* HttpResponseState
-    yield* cookie.unset.pipe(Effect.tap((updated) => Ref.update(state, (state) => state.setCookie(updated))))
-  })
-
-export const setHeader = (name: string, value: string): Effect.Effect<void, never, HttpResponseState> => {
-  return HttpResponseState.pipe(Effect.flatMap((state) => Ref.update(state, (s) => s.setHeader(name, value))))
+export class HttpResponse extends Context.Tag("HttpResponse")<HttpResponse, State>() {
+  static make: Effect.Effect<State> = State.make
 }

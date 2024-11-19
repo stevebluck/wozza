@@ -1,8 +1,8 @@
-import { Context, Data, Effect, Ref } from "effect"
+import { Context, Data, Effect, Ref, Schema } from "effect"
 import { Cookie } from "./Cookie"
 import { Handler } from "./Handler"
-import * as HttpRequest from "./HttpRequest"
-import * as HttpResponse from "./HttpResponse"
+import { HttpResponse } from "./HttpResponse"
+import { HttpServerRequest } from "@effect/platform"
 
 export interface RequestSession<T> {
   get: Effect.Effect<State<T>, never>
@@ -30,15 +30,16 @@ export const makeMiddleware =
   <A, R>(handler: Handler<A, R>) =>
     Effect.gen(function* () {
       const cookie = yield* getCookie
+      const response = yield* HttpResponse
 
-      const sessionState = yield* HttpRequest.getCookieHeader.pipe(
-        Effect.flatMap(() => HttpRequest.parseCookie(cookie)),
-        Effect.map((session) => State.Provided({ value: session })),
-        Effect.catchTags({
-          CookieHeaderNotFound: () => Effect.succeed(State.NotProvided()),
-          ParseError: () => Effect.succeed(State.InvalidToken()),
-          CookieError: () => Effect.succeed(State.NotProvided())
-        })
+      const sessionState = yield* HttpServerRequest.schemaHeaders(Schema.Struct({ cookie: Schema.String })).pipe(
+        Effect.zipRight(
+          cookie.parse.pipe(
+            Effect.map((value) => State.Provided({ value })),
+            Effect.orElseSucceed(() => State.InvalidToken())
+          )
+        ),
+        Effect.orElseSucceed(() => State.NotProvided())
       )
 
       const sessions = yield* make(sessionState)
@@ -48,11 +49,11 @@ export const makeMiddleware =
           sessions.get.pipe(
             Effect.flatMap(
               State.$match({
-                Set: (s) => HttpResponse.setCookie(cookie, s.value),
-                Unset: () => HttpResponse.unsetCookie(cookie),
+                Set: (s) => response.setCookie(cookie, s.value),
+                Unset: () => response.unsetCookie(cookie),
                 NotProvided: () => Effect.void,
                 Provided: () => Effect.void,
-                InvalidToken: () => HttpResponse.unsetCookie(cookie)
+                InvalidToken: () => response.unsetCookie(cookie)
               })
             )
           )
@@ -76,5 +77,3 @@ interface StateDef extends Data.TaggedEnum.WithGenerics<1> {
 }
 
 export const State = Data.taggedEnum<StateDef>()
-
-export class Unauthorized extends Data.TaggedError("Unauthorized") {}

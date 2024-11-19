@@ -28,10 +28,13 @@ const credentialFromEmail = (email: Email) =>
 
 export const action = Loader.fromEffect(
   HttpServerRequest.schemaBodyForm(Schema.Struct({ email: Email })).pipe(
-    Effect.flatMap((body) => Users.authenticate(credentialFromEmail(body.email))),
+    Effect.flatMap((body) => Users.register(credentialFromEmail(body.email))),
+    Effect.tapError(Effect.logError),
+    Effect.tap(Effect.log),
     Effect.flatMap(Sessions.mint),
     Effect.map(() => Result.Redirect("/")),
-    Effect.orElseSucceed(() => Result.Json({ error: "Invalid email" }))
+    Effect.mapError((e) => Result.Json({ error: e._tag })),
+    Effect.merge
   )
 )
 
@@ -40,31 +43,21 @@ export default function Login(props: Route.ComponentProps) {
     <div className="flex h-screen w-full items-center justify-center px-4">
       <Card className="mx-auto max-w-sm w-full">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Enter your email below to login to your account</CardDescription>
+          <CardTitle className="text-2xl">Register</CardTitle>
+          <CardDescription>Enter your email below to create an account</CardDescription>
         </CardHeader>
         <CardContent>
           <Form method="post">
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  defaultValue="stephen@whatthebluck.com"
-                />
+                <Input id="email" name="email" type="email" placeholder="m@example.com" required defaultValue="stephen@whatthebluck.com" />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <Link to="#" className="ml-auto inline-block text-sm underline">
-                    Forgot your password?
-                  </Link>
                 </div>
-                <Input id="password" name="password" type="password" required />
+                <Input id="password" name="password" type="password" required defaultValue="password" />
               </div>
               <Button type="submit" className="w-full">
                 Login
@@ -75,9 +68,9 @@ export default function Login(props: Route.ComponentProps) {
             </div>
           </Form>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link to="/register" className="underline">
-              Sign up
+            Already have an account?{" "}
+            <Link to="/login" className="underline">
+              Login
             </Link>
           </div>
         </CardContent>

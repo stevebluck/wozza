@@ -1,11 +1,11 @@
-import { FileSystem, Headers, HttpServerRequest } from "@effect/platform"
+import { Headers, HttpServerRequest } from "@effect/platform"
 import { Cause, Effect, Either, Exit, identity, ManagedRuntime } from "effect"
 import { data, LoaderFunctionArgs, redirect, UNSAFE_DataWithResponseInit } from "react-router"
-import { HttpResponseState } from "./HttpResponseState"
 import { Scope } from "effect/Scope"
+import { HttpResponse } from "./HttpResponse"
 import * as Result from "./Result"
 
-export type RequestContext = HttpServerRequest.HttpServerRequest | HttpResponseState | Scope
+export type RequestContext = HttpServerRequest.HttpServerRequest | HttpResponse | Scope
 
 export type Handler<A, R = never> = Effect.Effect<Result.Result<A>, never, R | RequestContext>
 
@@ -23,9 +23,9 @@ export const fromEffect =
       // @ts-expect-error
       const result = yield* setup.middleware(handler)
 
-      const responseState = yield* HttpResponseState
-      const state = yield* responseState.get
-      const headers = Headers.merge(state.init.headers)(Headers.fromInput(result.init?.headers))
+      const response = yield* HttpResponse
+      const init = yield* response.init
+      const headers = Headers.merge(init.headers, Headers.fromInput(result.init?.headers))
 
       return Result.match(result, {
         Json: (r) => Either.right(data(r.value, { ...r.init, headers })),
@@ -35,8 +35,8 @@ export const fromEffect =
 
     return (args) => {
       const runnable = app.pipe(
-        Effect.provideServiceEffect(HttpResponseState, HttpResponseState.make),
         Effect.provideService(HttpServerRequest.HttpServerRequest, HttpServerRequest.fromWeb(args.request)),
+        Effect.provideServiceEffect(HttpResponse, HttpResponse.make),
         Effect.provideServiceEffect(
           HttpServerRequest.ParsedSearchParams,
           Effect.try(() => new URL(args.request.url)).pipe(

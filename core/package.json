@@ -16,11 +16,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "effect": "catalog:",
-    "@wozza/prelude": "workspace:*"
+    "@effect/sql": "^0.20.8",
+    "@effect/sql-pg": "^0.21.8",
+    "@wozza/prelude": "workspace:*",
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:",
-    "prettier": "catalog:"
+    "prettier": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -5,6 +5,7 @@ packages:
 
 catalog:
   "@effect/platform": ^0.69.24
+  "@effect/platform-node": "^0.64.26"
   effect: ^3.10.15
   typescript: ^5.6.3
   vitest: ^1.6.0

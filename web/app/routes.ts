@@ -2,7 +2,8 @@ import type { RouteConfig } from "@react-router/dev/routes"
 import { index, layout, route } from "@react-router/dev/routes"
 
 export const routes: RouteConfig = [
-  index("routes/home.tsx"),
+  layout("routes/layout.tsx", [index("routes/dashboard.tsx"), route("account", "routes/account.tsx")]),
   route("login", "routes/login.tsx"),
-  layout("routes/dashboard-layout.tsx", [route("dashboard", "routes/dashboard.tsx")])
+  route("register", "routes/register.tsx"),
+  route("logout", "routes/logout.ts")
 ]

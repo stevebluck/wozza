@@ -1,5 +1,5 @@
 import * as Route from "./+types.dashboard"
-import { type MetaFunction } from "react-router"
+import { Outlet, type MetaFunction } from "react-router"
 import { Effect } from "effect"
 import { Result } from "@wozza/react-router-effect"
 import { Loader } from "~/main.server"
@@ -21,6 +21,9 @@ export default function Dashboard(props: Route.ComponentProps) {
   return (
     <div>
       <h1>Dashboard</h1>
+      <div>
+        <Outlet />
+      </div>
     </div>
   )
 }
