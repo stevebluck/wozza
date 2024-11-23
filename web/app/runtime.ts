@@ -1,7 +1,5 @@
 import { Config, Data, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
 import { Users } from "./users/Users"
-import { NodeFileSystem } from "@effect/platform-node"
-import { Path } from "@effect/platform"
 import { SessionCookie } from "./auth/Sessions"
 
 type AppConfig = Data.TaggedEnum<{
@@ -35,7 +33,7 @@ const CapabilitiesLayer = Layer.unwrapEffect(
       Config.orElse(() => DevInMemoryConfig)
     )
 
-    yield* Effect.logInfo(`Running in mode: ${config}`)
+    yield* Effect.logInfo(`Running in ${config._tag} mode`)
 
     return AppConfig.$match(config, {
       Production: () => Layer.mergeAll(Users.Rdbms),
@@ -58,8 +56,6 @@ const LoggerLayer = Layer.unwrapEffect(
 
 const AppLayer = Layer.mergeAll(SessionCookie.layer).pipe(
   Layer.provideMerge(CapabilitiesLayer),
-  Layer.merge(Path.layer),
-  Layer.merge(NodeFileSystem.layer),
   Layer.provide(LoggerLayer)
 )
 

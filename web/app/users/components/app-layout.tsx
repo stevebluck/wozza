@@ -6,9 +6,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from "~/ui/breadcrumb"
-import { AppSidebar } from "~/ui/components/app-sidebar"
 import { Separator } from "~/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/ui/sidebar"
+import { AppSidebar } from "./app-sidebar"
 import type { User } from "~/users/Users"
 
 export namespace AppLayout {

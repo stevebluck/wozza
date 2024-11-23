@@ -1,6 +1,6 @@
 import { Headers, HttpServerRequest } from "@effect/platform"
 import { Cause, Effect, Either, Exit, identity, ManagedRuntime } from "effect"
-import { data, LoaderFunctionArgs, redirect, UNSAFE_DataWithResponseInit } from "react-router"
+import { ActionFunctionArgs, data, LoaderFunctionArgs, redirect, UNSAFE_DataWithResponseInit } from "react-router"
 import { Scope } from "effect/Scope"
 import { HttpResponse } from "./HttpResponse"
 import * as Result from "./Result"
@@ -9,7 +9,9 @@ export type RequestContext = HttpServerRequest.HttpServerRequest | HttpResponse 
 
 export type Handler<A, R = never> = Effect.Effect<Result.Result<A>, never, R | RequestContext>
 
-export type LoaderHandler<A> = (args: LoaderFunctionArgs) => Promise<UNSAFE_DataWithResponseInit<A>>
+export type ReactRouterHandler<A> = (
+  args: LoaderFunctionArgs | ActionFunctionArgs
+) => Promise<UNSAFE_DataWithResponseInit<A>>
 
 type Setup<RR, RE, A, R, AM, Provided> = {
   runtime: ManagedRuntime.ManagedRuntime<RR, RE>
@@ -18,7 +20,7 @@ type Setup<RR, RE, A, R, AM, Provided> = {
 
 export const fromEffect =
   <RR, RE, A, R extends RR, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
-  (handler: Handler<A, R | Provided>): LoaderHandler<AM> => {
+  (handler: Handler<A, R | Provided>): ReactRouterHandler<AM> => {
     const app = Effect.gen(function* () {
       // @ts-expect-error
       const result = yield* setup.middleware(handler)
@@ -54,7 +56,7 @@ export const fromEffect =
 
 export const unwrapEffect =
   <RR, RE, A, R extends RR, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
-  (handler: Effect.Effect<Handler<A, R | Provided>, never, RR>): LoaderHandler<AM> => {
+  (handler: Effect.Effect<Handler<A, R | Provided>, never, RR>): ReactRouterHandler<AM> => {
     const handlerPromise = setup.runtime.runPromise(handler)
     return async (args) => {
       return handlerPromise.then((app) => fromEffect(setup)(app)(args))

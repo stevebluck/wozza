@@ -13,7 +13,7 @@ export const RegisterPage = () => {
           <CardDescription>Enter your email below to create an account</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form method="post">
+          <Form method="post" action="/register">
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>

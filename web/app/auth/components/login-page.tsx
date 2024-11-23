@@ -13,7 +13,7 @@ export const LoginPage = () => {
           <CardDescription>Enter your email below to login to your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form method="post">
+          <Form method="post" action="/login">
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>

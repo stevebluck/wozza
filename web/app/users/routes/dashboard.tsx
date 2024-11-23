@@ -1,6 +1,6 @@
 import { DashboardPage } from "~/users/components/dashboard-page"
-import * as Route from "./+types.dashboard"
 import { type MetaFunction } from "react-router"
+import { Route } from "./+types/dashboard"
 
 export const meta: MetaFunction = () => {
   return [{ title: "Dashboard" }]

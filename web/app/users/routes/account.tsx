@@ -1,6 +1,6 @@
 import { AccountPage } from "~/users/components/account-page"
-import * as Route from "./+types.dashboard"
 import { type MetaFunction } from "react-router"
+import { Route } from "./+types/account"
 
 export const meta: MetaFunction = () => {
   return [{ title: "Account" }]

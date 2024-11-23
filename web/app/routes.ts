@@ -1,9 +1,12 @@
 import type { RouteConfig } from "@react-router/dev/routes"
 import { index, layout, route } from "@react-router/dev/routes"
 
-export const routes: RouteConfig = [
-  layout("routes/layout.tsx", [index("routes/dashboard.tsx"), route("account", "routes/account.tsx")]),
-  route("login", "routes/login.tsx"),
-  route("register", "routes/register.tsx"),
-  route("logout", "routes/logout.ts")
-]
+export default [
+  layout("users/routes/layout.tsx", [
+    index("users/routes/dashboard.tsx"),
+    route("account", "users/routes/account.tsx")
+  ]),
+  route("login", "auth/routes/login.tsx"),
+  route("register", "auth/routes/register.tsx"),
+  route("logout", "auth/routes/logout.ts")
+] satisfies RouteConfig
