@@ -3,12 +3,3 @@
 > @wozza/core@1.0.0 check /Users/stephenbluck/Repos/wozza/core
 > tsc
 
-[96msrc/users/RdbmsUsers.ts[0m:[93m18[0m:[93m11[0m - [91merror[0m[90m TS6133: [0m'a' is declared but its value is never read.
-
-[7m18[0m     const a = Effect.gen(this, function* () {
-[7m  [0m [91m          ~[0m
-
-
-Found 1 error in src/users/RdbmsUsers.ts[90m:18[0m
-
-[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 2.[39m

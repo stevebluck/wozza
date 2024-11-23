@@ -1,10 +1,10 @@
 import { Users, User, FirstName, LastName, Picture } from "./Users"
-import { Array, Cause, DateTime, Effect, Option, Schema } from "effect"
+import { Array, DateTime, Effect, Option, Schema } from "effect"
 import { Token } from "../tokens/Tokens"
 import { Id, Identified, refineErrorOrDie } from "@wozza/prelude"
 import { Credentials, CredentialsAlreadyExist, InvalidCredentials } from "../sessions/Credentials"
 import { Session } from "../sessions/Session"
-import { SqlClient } from "@effect/sql"
+import { SqlClient, SqlError } from "@effect/sql"
 import { Email } from "../emails/Email"
 
 export class RdbmsUsers implements Users {
@@ -28,7 +28,7 @@ export class RdbmsUsers implements Users {
       Effect.orDie,
       Effect.flatMap(Array.head),
       Effect.map((res) => Session.make({ user: DbUser.toUser(res), token: Token.make<Id<User>>(res.session_id) })),
-      Effect.mapError(() => new Token.NoSuchToken())
+      Effect.mapError((e) => new Token.NoSuchToken())
     )
   }
 
@@ -50,20 +50,12 @@ export class RdbmsUsers implements Users {
         SELECT u.*, s.session_id, s.expires_at
         FROM user_auth u
         INNER JOIN new_session s ON true;
-      `
+      `.pipe(Effect.orDie)
 
-      return query
-    }).pipe(
-      Effect.flatMap(Array.head),
-      Effect.map((res) => Session.make({ user: DbUser.toUser(res), token: Token.make<Id<User>>(res.session_id) })),
-      refineErrorOrDie((e) => {
-        if (Cause.isNoSuchElementException(e)) {
-          return Option.some(new InvalidCredentials())
-        }
+      const result = yield* Array.head(query).pipe(Effect.mapError((e) => new InvalidCredentials()))
 
-        return Option.none()
-      })
-    )
+      return Session.make({ user: DbUser.toUser(result), token: Token.make<Id<User>>(result.session_id) })
+    })
   }
 
   logout = (token: Token<Id<User>>): Effect.Effect<void> => {
@@ -106,7 +98,7 @@ export class RdbmsUsers implements Users {
 
     return this.sql.withTransaction(tx).pipe(
       refineErrorOrDie((e) => {
-        if (Schema.is(DatabaseError.UniqueConstraintError)(e.cause)) {
+        if (DatabaseError.isUniqueConstraintError(e)) {
           return Option.some(new CredentialsAlreadyExist())
         }
         return Option.none()
@@ -155,4 +147,6 @@ namespace DatabaseError {
     table_name: Schema.String,
     constraint_name: Schema.String
   })
+
+  export const isUniqueConstraintError = (e: SqlError.SqlError) => Schema.is(UniqueConstraintError)(e.cause)
 }

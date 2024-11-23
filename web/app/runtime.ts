@@ -1,8 +1,8 @@
 import { Config, Data, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
-import { Users } from "./services/Users"
-import { SessionCookie } from "./services/Sessions"
+import { Users } from "./users/Users"
 import { NodeFileSystem } from "@effect/platform-node"
 import { Path } from "@effect/platform"
+import { SessionCookie } from "./auth/Sessions"
 
 type AppConfig = Data.TaggedEnum<{
   Production: {}

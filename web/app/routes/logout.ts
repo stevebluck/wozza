@@ -1,8 +1,8 @@
 import { Effect } from "effect"
 import { Result } from "@wozza/react-router-effect"
 import { Loader } from "~/main.server"
-import { Sessions } from "~/services/Sessions"
-import { Users } from "~/services/Users"
+import { Sessions } from "~/auth/Sessions"
+import { Users } from "~/users/Users"
 
 export const action = Loader.fromEffect(
   Sessions.get.pipe(

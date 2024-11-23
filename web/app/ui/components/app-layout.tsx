@@ -1,23 +1,27 @@
-import { AppSidebar } from "~/ui/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
+  BreadcrumbSeparator
 } from "~/ui/breadcrumb"
+import { AppSidebar } from "~/ui/components/app-sidebar"
 import { Separator } from "~/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "~/ui/sidebar"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/ui/sidebar"
+import type { User } from "~/users/Users"
 
-export default function Page() {
+export namespace AppLayout {
+  export interface Props {
+    user: User
+    children: React.ReactNode
+  }
+}
+
+export const AppLayout = (props: AppLayout.Props) => {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar user={props.user} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
@@ -26,9 +30,7 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
+                  <BreadcrumbLink href="#">Building Your Application</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
@@ -44,6 +46,7 @@ export default function Page() {
             <div className="aspect-video rounded-xl bg-muted/50" />
             <div className="aspect-video rounded-xl bg-muted/50" />
           </div>
+          <div>{props.children}</div>
           <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
         </div>
       </SidebarInset>
