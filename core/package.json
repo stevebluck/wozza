@@ -16,8 +16,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@effect/sql": "^0.20.8",
-    "@effect/sql-pg": "^0.21.8",
+    "@effect/sql": "catalog:",
+    "@effect/sql-pg": "catalog:",
     "@wozza/prelude": "workspace:*",
     "@effect/platform-node": "catalog:",
     "effect": "catalog:"
