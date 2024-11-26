@@ -12,17 +12,17 @@ export interface Users {
   logout: (token: Token<Id<User>>) => Effect.Effect<void>
 }
 
+const FirstNameSymbol: unique symbol = Symbol.for("FirstName")
 export type FirstName = typeof FirstName.Type
-const FirstNameBrand: unique symbol = Symbol.for("FirstName")
-export const FirstName = Schema.NonEmptyTrimmedString.pipe(Schema.maxLength(100), Schema.brand(FirstNameBrand))
+export const FirstName = Schema.NonEmptyTrimmedString.pipe(Schema.maxLength(100), Schema.brand(FirstNameSymbol))
 
+const LastNameSymbol: unique symbol = Symbol.for("LastName")
 export type LastName = typeof LastName.Type
-const LastNameBrand: unique symbol = Symbol.for("LastName")
-export const LastName = Schema.NonEmptyTrimmedString.pipe(Schema.maxLength(100), Schema.brand(LastNameBrand))
+export const LastName = Schema.NonEmptyTrimmedString.pipe(Schema.maxLength(100), Schema.brand(LastNameSymbol))
 
+const PictureSymbol: unique symbol = Symbol.for("Picture")
 export type Picture = typeof Picture.Type
-const PictureBrand: unique symbol = Symbol.for("Picture")
-export const Picture = Schema.NonEmptyTrimmedString.pipe(Schema.maxLength(500), Schema.brand(PictureBrand))
+export const Picture = Schema.NonEmptyTrimmedString.pipe(Schema.maxLength(500), Schema.brand(PictureSymbol))
 
 export class User extends Schema.Class<User>("User")({
   email: Email,
