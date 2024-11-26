@@ -28,7 +28,7 @@ export class RdbmsUsers implements Users {
       Effect.orDie,
       Effect.flatMap(Array.head),
       Effect.map((res) => Session.make({ user: DbUser.toUser(res), token: Token.make<Id<User>>(res.session_id) })),
-      Effect.mapError((e) => new Token.NoSuchToken())
+      Effect.mapError(() => new Token.NoSuchToken())
     )
   }
 
