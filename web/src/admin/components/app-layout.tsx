@@ -9,11 +9,11 @@ import {
 import { Separator } from "~/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/ui/sidebar"
 import { AppSidebar } from "./app-sidebar"
-import type { User } from "~/users/Users"
+import { User } from "@wozza/core"
 
 export namespace AppLayout {
   export interface Props {
-    user: User
+    user: User.Encoded
     children: React.ReactNode
   }
 }

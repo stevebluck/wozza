@@ -1,4 +1,4 @@
-import { DashboardPage } from "~/users/components/dashboard-page"
+import { DashboardPage } from "../components/dashboard-page"
 import { type MetaFunction } from "react-router"
 import { Route } from "./+types/dashboard"
 
