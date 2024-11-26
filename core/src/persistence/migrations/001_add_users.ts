@@ -1,12 +1,10 @@
-// src/migrations/0001_add_users.ts
-
 import { Effect } from "effect"
 import { SqlClient } from "@effect/sql"
 
 export default Effect.flatMap(
   SqlClient.SqlClient,
   (sql) => sql`
-    CREATE TABLE wozza.users (
+    CREATE TABLE IF NOT EXISTS wozza.users (
         id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
         first_name text,
         last_name text,
@@ -17,7 +15,7 @@ export default Effect.flatMap(
     CREATE UNIQUE INDEX users_pkey ON wozza.users(id uuid_ops);
     CREATE UNIQUE INDEX users_email_key ON wozza.users(email text_ops);
 
-    CREATE TABLE wozza.user_sessions (
+    CREATE TABLE IF NOT EXISTS wozza.user_sessions (
         id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
         user_id uuid NOT NULL REFERENCES wozza.users(id) ON DELETE CASCADE,
         created_at date NOT NULL DEFAULT now(),
