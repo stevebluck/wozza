@@ -16,48 +16,45 @@ export interface Cookie<A, R = never> {
   settings: Settings<A, R>
 }
 
-export const make = <A, R = never>(settings: Settings<A, R>): Effect.Effect<Cookie<A, R>> => {
-  return Effect.gen(function* () {
-    const { name, schema, ...options } = settings
+export const make = <A, R = never>(settings: Settings<A, R>): Cookie<A, R> => {
+  const { name, schema, ...options } = settings
 
-    const annotated = schema.pipe(Schema.annotations({ identifier: `cookie(${name})` }))
+  const annotated = schema.pipe(Schema.annotations({ identifier: `cookie(${name})` }))
 
-    const encode = Schema.encode(annotated)
-    const decode = Schema.decode(annotated)
+  const encode = Schema.encode(annotated)
+  const decode = Schema.decode(annotated)
 
-    const optionsSecrets = options?.secrets || []
-    const secrets = optionsSecrets.map(Redacted.value)
+  const optionsSecrets = options?.secrets || []
+  const secrets = optionsSecrets.map(Redacted.value)
 
-    const rrCookie = createCookie(name, {
-      ...options,
-      secrets,
-      maxAge: options?.maxAge ? Duration.toSeconds(options.maxAge) : undefined,
-      secure: options?.secure
-    })
-
-    const serialize = (value: A) => {
-      return encode(value).pipe(
-        Effect.andThen((value) => rrCookie.serialize(value)),
-        Effect.catchTags({ UnknownException: Effect.die })
-      )
-    }
-
-    const parse = HttpServerRequest.schemaCookies(Schema.Struct({ [settings.name]: Schema.String })).pipe(
-      Effect.flatMap((obj) => Cookies.makeCookie(settings.name, obj[settings.name], settings)),
-      Effect.map((cookie) => Cookies.toCookieHeader(Cookies.fromIterable([cookie]))),
-      Effect.andThen(rrCookie.parse),
-      Effect.catchTags({ UnknownException: Effect.die, CookieError: Effect.die }),
-      Effect.flatMap(decode)
-    )
-
-    const unset = Effect.promise(() => rrCookie.serialize({}, { ...options, maxAge: 0 }))
-
-    return {
-      parse,
-      serialize,
-      unset,
-      name,
-      settings
-    }
+  const rrCookie = createCookie(name, {
+    ...options,
+    secrets,
+    maxAge: options?.maxAge ? Duration.toSeconds(options.maxAge) : undefined,
+    secure: options?.secure
   })
+
+  const serialize = (value: A) => {
+    return encode(value).pipe(
+      Effect.andThen((value) => rrCookie.serialize(value)),
+      Effect.catchTags({ UnknownException: Effect.die })
+    )
+  }
+
+  const parse = HttpServerRequest.schemaCookies(Schema.Struct({ [settings.name]: Schema.String })).pipe(
+    Effect.flatMap((obj) => Cookies.makeCookie(settings.name, obj[settings.name], settings)),
+    Effect.map((cookie) => Cookies.toCookieHeader(Cookies.fromIterable([cookie]))),
+    Effect.andThen(rrCookie.parse),
+    Effect.catchTags({ UnknownException: Effect.die, CookieError: Effect.die }),
+    Effect.flatMap(decode)
+  )
+
+  const unset = Effect.promise(() => rrCookie.serialize({}, { ...options, maxAge: 0 }))
+
+  return {
+    parse,
+    serialize,
+    unset,
+    settings
+  }
 }

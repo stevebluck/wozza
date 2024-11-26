@@ -10,31 +10,24 @@ export class Sessions extends Effect.Tag("@app/Sessions")<Sessions, RequestSessi
 
 export class SessionCookie extends Effect.Service<SessionCookie>()("SessionCookie", {
   effect: Effect.gen(function* () {
-    const config = yield* Config.all({
-      secrets: Config.withDefault(Config.array(Config.redacted("SESSION_SECRETS")), Array.empty()),
-      secure: Config.string("NODE_ENV").pipe(Config.map((env) => env === "production"))
-    })
-
-    const UserIdToken = Token.schema<Id<User>>()
-
-    return yield* Cookie.make({
+    return Cookie.make({
       name: "_session",
       maxAge: "30 days",
       path: "/",
-      schema: UserIdToken,
+      schema: Token.schema<Id<User>>(),
       httpOnly: true,
-      secrets: config.secrets,
-      secure: config.secure
+      secrets: yield* Config.withDefault(Config.array(Config.redacted("SESSION_SECRETS")), Array.empty()),
+      secure: yield* Config.string("NODE_ENV").pipe(Config.map((env) => env === "production"))
     })
   })
-}) {
-  static middleware = RequestSession.makeMiddleware(
-    SessionCookie, // makeCookieEffect
-    Sessions, // provides
-    (token) => Users.identify(token), // toSession
-    (session) => session.token // fromSession
-  )
-}
+}) {}
+
+export const withSessions = RequestSession.makeMiddleware(
+  SessionCookie,
+  Sessions,
+  (token) => Users.identify(token),
+  (session) => session.token
+)
 
 export const withCurrentSession = <A, R>(handler: Handler.Handler<A, R>) =>
   Sessions.sessionData.pipe(
