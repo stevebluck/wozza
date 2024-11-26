@@ -14,7 +14,7 @@ import {
 
 import { NavMain } from "./nav-main"
 import { NavProjects } from "./nav-projects"
-import { NavUser } from "./nav-user"
+import { NavUser } from "../../users/components/nav-user"
 import { TeamSwitcher } from "./team-switcher"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from "~/ui/sidebar"
 import { User } from "@wozza/core"
