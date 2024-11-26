@@ -1,4 +1,4 @@
-import { Context, Data, Effect, Ref, Schema } from "effect"
+import { Cause, Context, Data, Effect, Option, Ref, Schema } from "effect"
 import { Cookie } from "./Cookie"
 import { Handler } from "./Handler"
 import { HttpResponse } from "./HttpResponse"
@@ -9,6 +9,7 @@ export interface RequestSession<T> {
   mint: (value: T) => Effect.Effect<void, never>
   set: (state: State<T>) => Effect.Effect<void, never>
   invalidate: Effect.Effect<void, never>
+  getSessionData: Effect.Effect<T, Cause.NoSuchElementException>
 }
 
 export const make = <T>(state: State<T>): Effect.Effect<RequestSession<T>, never> =>
@@ -18,14 +19,27 @@ export const make = <T>(state: State<T>): Effect.Effect<RequestSession<T>, never
       get: session.get,
       mint: (value: T) => Ref.set(session, State.Set({ value })),
       set: (state: State<T>) => Ref.set(session, state),
-      invalidate: Ref.set(session, State.Unset())
+      invalidate: Ref.set(session, State.Unset()),
+      getSessionData: session.get.pipe(
+        Effect.flatMap(
+          State.$match({
+            Provided: ({ value }) => Option.some(value),
+            Set: ({ value }) => Option.some(value),
+            Unset: () => Option.none(),
+            NotProvided: () => Option.none(),
+            InvalidToken: () => Option.none()
+          })
+        )
+      )
     }
   })
 
 export const makeMiddleware =
-  <Id, SessionData, CR, MCE, MCR>(
-    tag: Context.Tag<Id, RequestSession<SessionData>>,
-    getCookie: Effect.Effect<Cookie<SessionData, CR>, MCE, MCR>
+  <Id, C, SessionData, E, R, CR, MCE, MCR>(
+    getCookie: Effect.Effect<Cookie<C, CR>, MCE, MCR>,
+    service: Context.Tag<Id, RequestSession<SessionData>>,
+    fromCookie: (cookieValue: C) => Effect.Effect<SessionData, E, R>,
+    toCookie: (sessionData: SessionData) => C
   ) =>
   <A, R>(handler: Handler<A, R>) =>
     Effect.gen(function* () {
@@ -35,6 +49,7 @@ export const makeMiddleware =
       const sessionState = yield* HttpServerRequest.schemaHeaders(Schema.Struct({ cookie: Schema.String })).pipe(
         Effect.zipRight(
           cookie.parse.pipe(
+            Effect.flatMap(fromCookie),
             Effect.map((value) => State.Provided({ value })),
             Effect.orElseSucceed(() => State.InvalidToken())
           )
@@ -49,7 +64,7 @@ export const makeMiddleware =
           sessions.get.pipe(
             Effect.flatMap(
               State.$match({
-                Set: (s) => response.setCookie(cookie, s.value),
+                Set: (s) => response.setCookie(cookie, toCookie(s.value)),
                 Unset: () => response.unsetCookie(cookie),
                 NotProvided: () => Effect.void,
                 Provided: () => Effect.void,
@@ -58,13 +73,13 @@ export const makeMiddleware =
             )
           )
         ),
-        Effect.provideService(tag, sessions)
+        Effect.provideService(service, sessions)
       )
 
       return result
     })
 
-export type State<T> = Data.TaggedEnum<{
+type State<T> = Data.TaggedEnum<{
   Provided: { value: T }
   NotProvided: {}
   Set: { value: T }
@@ -76,4 +91,4 @@ interface StateDef extends Data.TaggedEnum.WithGenerics<1> {
   readonly taggedEnum: State<this["A"]>
 }
 
-export const State = Data.taggedEnum<StateDef>()
+const State = Data.taggedEnum<StateDef>()

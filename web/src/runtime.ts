@@ -1,6 +1,6 @@
 import { Config, Data, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
-import { Users } from "./users/Users"
 import { SessionCookie } from "./auth/Sessions"
+import { Users } from "./users/Users"
 
 type AppConfig = Data.TaggedEnum<{
   Production: {}
@@ -54,7 +54,7 @@ const LoggerLayer = Layer.unwrapEffect(
   })
 )
 
-const AppLayer = Layer.mergeAll(SessionCookie.layer).pipe(
+const AppLayer = Layer.mergeAll(SessionCookie.Default).pipe(
   Layer.provideMerge(CapabilitiesLayer),
   Layer.provide(LoggerLayer)
 )

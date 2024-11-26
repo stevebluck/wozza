@@ -7,7 +7,7 @@ import { Email } from "../emails/Email"
 import { Credentials, CredentialsAlreadyExist, InvalidCredentials } from "../sessions/Credentials"
 
 export class ReferenceUsers implements Users {
-  static make = Effect.gen(function* () {
+  static make: Effect.Effect<Users> = Effect.gen(function* () {
     const state = yield* Ref.make(State.empty())
     return new ReferenceUsers(state)
   })

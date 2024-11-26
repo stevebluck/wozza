@@ -26,7 +26,11 @@ export const Picture = Schema.NonEmptyTrimmedString.pipe(Schema.maxLength(500), 
 
 export class User extends Schema.Class<User>("User")({
   email: Email,
-  firstName: Schema.OptionFromSelf(FirstName),
-  lastName: Schema.OptionFromSelf(LastName),
-  picture: Schema.OptionFromSelf(Picture)
+  firstName: Schema.OptionFromNullOr(FirstName),
+  lastName: Schema.OptionFromNullOr(LastName),
+  picture: Schema.OptionFromNullOr(Picture)
 }) {}
+
+export namespace User {
+  export type Encoded = typeof User.Encoded
+}

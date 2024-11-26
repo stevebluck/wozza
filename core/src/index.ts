@@ -7,6 +7,7 @@ export * from "./sessions/Session"
 export * from "./sessions/Credentials"
 export * from "./emails/Email"
 export * from "./persistence/Database"
+export * from "./users/Users"
 
 export * from "./Capabilities"
 
