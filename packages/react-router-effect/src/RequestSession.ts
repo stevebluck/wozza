@@ -9,7 +9,7 @@ export interface RequestSession<T> {
   mint: (value: T) => Effect.Effect<void, never>
   set: (state: State<T>) => Effect.Effect<void, never>
   invalidate: Effect.Effect<void, never>
-  getSessionData: Effect.Effect<T, Cause.NoSuchElementException>
+  sessionData: Effect.Effect<T, Cause.NoSuchElementException>
 }
 
 export const make = <T>(state: State<T>): Effect.Effect<RequestSession<T>, never> =>
@@ -20,7 +20,7 @@ export const make = <T>(state: State<T>): Effect.Effect<RequestSession<T>, never
       mint: (value: T) => Ref.set(session, State.Set({ value })),
       set: (state: State<T>) => Ref.set(session, state),
       invalidate: Ref.set(session, State.Unset()),
-      getSessionData: session.get.pipe(
+      sessionData: session.get.pipe(
         Effect.flatMap(
           State.$match({
             Provided: ({ value }) => Option.some(value),

@@ -37,7 +37,7 @@ export class SessionCookie extends Effect.Service<SessionCookie>()("SessionCooki
 }
 
 export const withCurrentSession = <A, R>(handler: Handler.Handler<A, R>) =>
-  Sessions.getSessionData.pipe(
+  Sessions.sessionData.pipe(
     Effect.mapError(() => Result.Redirect("/login")),
     Effect.flatMap((session) => handler.pipe(Effect.provideService(CurrentSession, session))),
     Effect.merge
