@@ -4,7 +4,6 @@ import { AppLayout } from "~/admin/components/app-layout"
 import { UserActions } from "~/users/UserActions"
 import { withCurrentSession } from "~/auth/Sessions"
 import { Route } from "./+types/layout"
-import { Effect } from "effect"
 
 export const loader = UserActions.getLayoutData.pipe(withCurrentSession, Loader.fromEffect)
 
