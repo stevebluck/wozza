@@ -45,10 +45,11 @@ export const makeMiddleware =
     Effect.gen(function* () {
       const cookie = yield* getCookie
       const response = yield* HttpResponse
+      const request = yield* HttpServerRequest.HttpServerRequest
 
-      const sessionState = yield* HttpServerRequest.schemaHeaders(Schema.Struct({ cookie: Schema.String })).pipe(
-        Effect.flatMap((headers) =>
-          cookie.parse(headers.cookie).pipe(
+      const sessionState = yield* Effect.fromNullable(request.cookies[cookie.settings.name]).pipe(
+        Effect.flatMap((value) =>
+          cookie.parse(value).pipe(
             Effect.flatMap(fromCookie),
             Effect.map((value) => State.Provided({ value })),
             Effect.orElseSucceed(() => State.InvalidToken())
@@ -79,7 +80,7 @@ export const makeMiddleware =
       return result
     })
 
-type State<T> = Data.TaggedEnum<{
+export type State<T> = Data.TaggedEnum<{
   Provided: { value: T }
   NotProvided: {}
   Set: { value: T }
@@ -91,4 +92,4 @@ interface StateDef extends Data.TaggedEnum.WithGenerics<1> {
   readonly taggedEnum: State<this["A"]>
 }
 
-const State = Data.taggedEnum<StateDef>()
+export const State = Data.taggedEnum<StateDef>()

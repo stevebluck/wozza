@@ -41,13 +41,14 @@ export const make = <A, R = never>(settings: Settings<A, R>): Cookie<A, R> => {
     )
   }
 
-  const parse = (value: string) =>
-    Cookies.makeCookie(settings.name, value, settings).pipe(
+  const parse = (value: string) => {
+    return Cookies.makeCookie(settings.name, value, settings).pipe(
       Effect.map((cookie) => Cookies.toCookieHeader(Cookies.fromIterable([cookie]))),
       Effect.andThen(rrCookie.parse),
       Effect.catchTags({ UnknownException: Effect.die, CookieError: Effect.die }),
       Effect.flatMap(decode)
     )
+  }
 
   const unset = Effect.promise(() => rrCookie.serialize({}, { ...options, maxAge: 0 }))
 

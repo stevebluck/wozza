@@ -6,7 +6,7 @@ type RedirectInit = Omit<ResponseInit, "status"> & { status: 302 | 301 }
 export type Result<A> = Data.TaggedEnum<{
   Redirect: { location: string; init: RedirectInit }
   Json: { value: A; init: ResponseInit }
-}>
+}> & {}
 
 interface ResultDefinition extends Data.TaggedEnum.WithGenerics<1> {
   readonly taggedEnum: Result<this["A"]>

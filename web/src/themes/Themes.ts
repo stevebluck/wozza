@@ -1,4 +1,4 @@
-import { Cookie, HttpResponse } from "@wozza/react-router-effect"
+import { Cookie, Handler, HttpResponse } from "@wozza/react-router-effect"
 import { Context, Effect, Schema } from "effect"
 import { HttpServerRequest } from "@effect/platform"
 
@@ -26,15 +26,19 @@ export class Themes extends Context.Tag("@app/Themes")<
   }
 >() {
   static make = Effect.gen(function* () {
-    const cookie = yield* ThemeCookie
-    const response = yield* HttpResponse
-    const request = yield* HttpServerRequest.HttpServerRequest
+    // const cookie = yield* ThemeCookie
+    // const response = yield* HttpResponse
+    // const request = yield* HttpServerRequest.HttpServerRequest
 
     return {
-      get: cookie.parse(request.cookies[cookie.settings.name]).pipe(Effect.orElseSucceed(() => Theme.Light)),
-      set: (theme: Theme) => response.setCookie(cookie, theme)
+      // get: cookie.parse(request.cookies[cookie.settings.name]).pipe(Effect.orElseSucceed(() => Theme.Light)),
+      // set: (theme: Theme) => response.setCookie(cookie, theme)
+    } as unknown as {
+      get: Effect.Effect<Theme>
+      set: (theme: Theme) => Effect.Effect<void>
     }
   })
 }
 
-export const withThemes = Effect.provideServiceEffect(Themes, Themes.make)
+export const withThemes = <A, R>(handler: Handler.Handler<A, R>): Handler.Handler<A, Exclude<R, Themes>> =>
+  Effect.provideServiceEffect(handler, Themes, Themes.make)

@@ -55,9 +55,10 @@ const LoggerLayer = Layer.unwrapEffect(
   })
 )
 
-const AppLayer = Layer.mergeAll(SessionCookie.Default, ThemeCookie.Default).pipe(
+const AppLayer = SessionCookie.Default.pipe(
   Layer.provideMerge(CapabilitiesLayer),
-  Layer.provide(LoggerLayer)
+  Layer.provideMerge(LoggerLayer),
+  Layer.provideMerge(ThemeCookie.Default)
 )
 
 export const runtime = ManagedRuntime.make(AppLayer)
