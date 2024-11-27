@@ -2,10 +2,10 @@ import { Outlet } from "react-router"
 import { Loader } from "~/main.server"
 import { AppLayout } from "~/admin/components/app-layout"
 import { UserActions } from "~/users/UserActions"
-import { withCurrentSession } from "~/auth/Sessions"
+import { CurrentSession } from "~/auth/Sessions"
 import { Route } from "./+types/layout"
 
-export const loader = UserActions.getLayoutData.pipe(withCurrentSession, Loader.fromEffect)
+export const loader = UserActions.getLayoutData.pipe(CurrentSession.middleware, Loader.fromEffect)
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
   return (

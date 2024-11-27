@@ -3,10 +3,9 @@ import { Handler, Result } from "@wozza/react-router-effect"
 import { Effect, Schema } from "effect"
 import { CurrentSession } from "~/auth/Sessions"
 import { Theme, Themes } from "~/themes/Themes"
-import { Users } from "~/users/Users"
 
 export interface UserActions {
-  getLayoutData: Handler.Handler<{ user: User.Encoded; theme: Theme }, Users | CurrentSession | Themes>
+  getLayoutData: Handler.Handler<{ user: User.Encoded; theme: Theme }, CurrentSession | Themes>
 }
 
 export const UserActions: UserActions = {

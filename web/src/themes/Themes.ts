@@ -1,5 +1,5 @@
-import { Cookie, HttpResponse, Middleware } from "@wozza/react-router-effect"
-import { Context, Effect, Schema } from "effect"
+import { Cookie, HttpResponse } from "@wozza/react-router-effect"
+import { Effect, Schema } from "effect"
 import { HttpServerRequest } from "@effect/platform"
 
 export type Theme = (typeof Theme)[keyof typeof Theme]
@@ -8,7 +8,7 @@ export const Theme = {
   Dark: "dark"
 } as const
 
-export class ThemeCookie extends Effect.Service<ThemeCookie>()("@app/ThemeCookie", {
+class ThemeCookie extends Effect.Service<ThemeCookie>()("@app/ThemeCookie", {
   succeed: Cookie.make({
     name: "app:theme",
     maxAge: "30 days",
@@ -18,26 +18,22 @@ export class ThemeCookie extends Effect.Service<ThemeCookie>()("@app/ThemeCookie
   })
 }) {}
 
-export class Themes extends Context.Tag("@app/Themes")<
-  Themes,
-  {
-    get: Effect.Effect<Theme>
-    set: (theme: Theme) => Effect.Effect<void>
-  }
->() {
-  static make = Effect.gen(function* () {
+export class Themes extends Effect.Service<Themes>()("@app/Themes", {
+  dependencies: [ThemeCookie.Default],
+  effect: Effect.gen(function* () {
     const cookie = yield* ThemeCookie
-    const response = yield* HttpResponse
-    const request = yield* HttpServerRequest.HttpServerRequest
 
     return {
-      get: cookie.parse(request.cookies[cookie.settings.name]).pipe(Effect.orElseSucceed(() => Theme.Light)),
-      set: (theme: Theme) => response.setCookie(cookie, theme)
+      get: Effect.gen(function* () {
+        const request = yield* HttpServerRequest.HttpServerRequest
+        return yield* cookie.parse(request.cookies[cookie.settings.name]).pipe(Effect.orElseSucceed(() => Theme.Light))
+      }),
+      set: (theme: Theme) => {
+        return Effect.gen(function* () {
+          const response = yield* HttpResponse
+          yield* response.setCookie(cookie, theme)
+        })
+      }
     }
   })
-}
-
-export const withThemes: Middleware.Middleware<
-  Themes,
-  HttpServerRequest.HttpServerRequest | HttpResponse | ThemeCookie
-> = (handler) => Effect.provideServiceEffect(handler, Themes, Themes.make)
+}) {}

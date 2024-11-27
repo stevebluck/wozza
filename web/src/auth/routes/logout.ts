@@ -1,5 +1,5 @@
 import { Loader } from "~/main.server"
 import { AuthActions } from "~/auth/AuthActions"
-import { withCurrentSession } from "~/auth/Sessions"
+import { CurrentSession } from "../Sessions"
 
-export const action = AuthActions.logout.pipe(withCurrentSession, Loader.fromEffect)
+export const action = AuthActions.logout.pipe(CurrentSession.middleware, Loader.fromEffect)

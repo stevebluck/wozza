@@ -1,8 +1,4 @@
-import { Cause, Context, Data, Effect, Option, Ref } from "effect"
-import { Cookie } from "./Cookie"
-import { HttpResponse } from "./HttpResponse"
-import { HttpServerRequest } from "@effect/platform"
-import { Middleware } from "./Middleware"
+import { Cause, Data, Effect, Option, Ref } from "effect"
 
 export interface RequestSession<T> {
   get: Effect.Effect<State<T>, never>
@@ -34,53 +30,7 @@ export const make = <T>(state: State<T>): Effect.Effect<RequestSession<T>, never
     }
   })
 
-export const makeMiddleware =
-  <Id, C, SessionData, E, R, CR, MCR>(
-    getCookie: Effect.Effect<Cookie<C, CR>, never, MCR>,
-    service: Context.Tag<Id, RequestSession<SessionData>>,
-    fromCookie: (cookieValue: C) => Effect.Effect<SessionData, E, R>,
-    toCookie: (sessionData: SessionData) => C
-  ): Middleware<Id, MCR | CR | HttpResponse | HttpServerRequest.HttpServerRequest | R> =>
-  (handler) =>
-    Effect.gen(function* () {
-      const cookie = yield* getCookie
-      const response = yield* HttpResponse
-      const request = yield* HttpServerRequest.HttpServerRequest
-
-      const sessionState = yield* Effect.fromNullable(request.cookies[cookie.settings.name]).pipe(
-        Effect.flatMap((value) =>
-          cookie.parse(value).pipe(
-            Effect.flatMap(fromCookie),
-            Effect.map((value) => State.Provided({ value })),
-            Effect.orElseSucceed(() => State.InvalidToken())
-          )
-        ),
-        Effect.orElseSucceed(() => State.NotProvided())
-      )
-
-      const sessions = yield* make(sessionState)
-
-      const result = yield* handler.pipe(
-        Effect.onExit(() =>
-          sessions.get.pipe(
-            Effect.flatMap(
-              State.$match({
-                Set: (s) => response.setCookie(cookie, toCookie(s.value)),
-                Unset: () => response.unsetCookie(cookie),
-                NotProvided: () => Effect.void,
-                Provided: () => Effect.void,
-                InvalidToken: () => response.unsetCookie(cookie)
-              })
-            )
-          )
-        ),
-        Effect.provideService(service, sessions)
-      )
-
-      return result
-    })
-
-type State<T> = Data.TaggedEnum<{
+export type State<T> = Data.TaggedEnum<{
   Provided: { value: T }
   NotProvided: {}
   Set: { value: T }
@@ -92,4 +42,4 @@ interface StateDef extends Data.TaggedEnum.WithGenerics<1> {
   readonly taggedEnum: State<this["A"]>
 }
 
-const State = Data.taggedEnum<StateDef>()
+export const State = Data.taggedEnum<StateDef>()
