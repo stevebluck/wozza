@@ -1,8 +1,8 @@
-import { Cause, Context, Data, Effect, Option, Ref, Schema } from "effect"
+import { Cause, Context, Data, Effect, Option, Ref } from "effect"
 import { Cookie } from "./Cookie"
-import { Handler } from "./Handler"
 import { HttpResponse } from "./HttpResponse"
 import { HttpServerRequest } from "@effect/platform"
+import { Middleware } from "./Middleware"
 
 export interface RequestSession<T> {
   get: Effect.Effect<State<T>, never>
@@ -35,13 +35,13 @@ export const make = <T>(state: State<T>): Effect.Effect<RequestSession<T>, never
   })
 
 export const makeMiddleware =
-  <Id, C, SessionData, E, R, CR, MCE, MCR>(
-    getCookie: Effect.Effect<Cookie<C, CR>, MCE, MCR>,
+  <Id, C, SessionData, E, R, CR, MCR>(
+    getCookie: Effect.Effect<Cookie<C, CR>, never, MCR>,
     service: Context.Tag<Id, RequestSession<SessionData>>,
     fromCookie: (cookieValue: C) => Effect.Effect<SessionData, E, R>,
     toCookie: (sessionData: SessionData) => C
-  ) =>
-  <A, R>(handler: Handler<A, R>) =>
+  ): Middleware<Id, MCR | CR | HttpResponse | HttpServerRequest.HttpServerRequest | R> =>
+  (handler) =>
     Effect.gen(function* () {
       const cookie = yield* getCookie
       const response = yield* HttpResponse
@@ -80,7 +80,7 @@ export const makeMiddleware =
       return result
     })
 
-export type State<T> = Data.TaggedEnum<{
+type State<T> = Data.TaggedEnum<{
   Provided: { value: T }
   NotProvided: {}
   Set: { value: T }
@@ -92,4 +92,4 @@ interface StateDef extends Data.TaggedEnum.WithGenerics<1> {
   readonly taggedEnum: State<this["A"]>
 }
 
-export const State = Data.taggedEnum<StateDef>()
+const State = Data.taggedEnum<StateDef>()

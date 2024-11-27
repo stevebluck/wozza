@@ -1,4 +1,4 @@
-import { Cookie, Handler, HttpResponse } from "@wozza/react-router-effect"
+import { Cookie, HttpResponse, Middleware } from "@wozza/react-router-effect"
 import { Context, Effect, Schema } from "effect"
 import { HttpServerRequest } from "@effect/platform"
 
@@ -37,5 +37,7 @@ export class Themes extends Context.Tag("@app/Themes")<
   })
 }
 
-export const withThemes = <A, R>(handler: Handler.Handler<A, R>) =>
-  Effect.provideServiceEffect(handler, Themes, Themes.make)
+export const withThemes: Middleware.Middleware<
+  Themes,
+  HttpServerRequest.HttpServerRequest | HttpResponse | ThemeCookie
+> = (handler) => Effect.provideServiceEffect(handler, Themes, Themes.make)

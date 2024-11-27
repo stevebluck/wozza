@@ -9,7 +9,6 @@ export interface AuthActions {
   register: Handler.Handler<{ error: string }, Users | Sessions>
   login: Handler.Handler<{ error: string }, Users | Sessions>
   logout: Handler.Handler<unknown, Users | CurrentSession | Sessions>
-
   // requestPasswordReset
   // resetPassword
 }
