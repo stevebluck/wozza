@@ -1,7 +1,9 @@
 import { Effect } from "effect"
 import { HttpServerRequest } from "@effect/platform/HttpServerRequest"
-import { Handler } from "./Handler"
 import * as Result from "./Result"
+import type { Handler } from "."
+
+export type Middleware<Provided=never, R2=never> = <A,R>(handler: Handler.Handler<A, R>) => Handler.Handler<A, R2 | Exclude<R, Provided>>
 
 /**
  * @name withLogger
@@ -14,9 +16,7 @@ import * as Result from "./Result"
  * - Redirect location (for redirects)
  * - Error details (for exceptions)
  */
-export const withLogger = {
-  provides: undefined,
-  handler: <A, R>(handler: Handler<A, R>): Handler<A, R> =>
+export const withLogger: Middleware = (handler) =>
   Effect.gen(function* () {
     const request = yield* HttpServerRequest
 
@@ -33,4 +33,3 @@ export const withLogger = {
 
     return result
   })
-}

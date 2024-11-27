@@ -1,4 +1,4 @@
-import { Cookie, Handler, HttpResponse, RequestSession, Result } from "@wozza/react-router-effect"
+import { Cookie, Handler, HttpResponse, Middleware, RequestSession, Result } from "@wozza/react-router-effect"
 import { Array, Config, Context, Effect, Layer } from "effect"
 import { Session, Token, User } from "@wozza/core"
 import { Id } from "@wozza/prelude"
@@ -6,6 +6,7 @@ import { Users } from "~/users/Users"
 import { HttpServerRequest } from "@effect/platform"
 import { State } from "node_modules/@wozza/react-router-effect/src/RequestSession"
 import { ThemeCookie, Themes } from "~/themes/Themes"
+
 
 export class CurrentSession extends Context.Tag("@app/CurrentSession")<CurrentSession, Session>() {}
 
@@ -34,9 +35,7 @@ export class SessionCookie extends Context.Tag("@app/SessionCookie")<SessionCook
 //   (session) => session.token
 // )
 
-export const withSessions = {
-  provides: Sessions,
-  handler: <A, R>(handler: Handler.Handler<A, R>): Handler.Handler<A, Exclude<R, Sessions>> =>
+export const withSessions: Middleware.Middleware<Sessions> = (handler) =>
   Effect.gen(function* () {
     // const cookie = yield* SessionCookie
     // const response = yield* HttpResponse
@@ -75,7 +74,7 @@ export const withSessions = {
 
     return yield* result
   })
-}
+
 
 export const withCurrentSession = <A, R>(handler: Handler.Handler<A, R>) =>
   Sessions.pipe(

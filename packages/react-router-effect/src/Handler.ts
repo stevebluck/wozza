@@ -13,13 +13,13 @@ export type ReactRouterHandler<A> = (
   args: LoaderFunctionArgs | ActionFunctionArgs
 ) => Promise<UNSAFE_DataWithResponseInit<A>>
 
-type Setup<RR, RE, A, R, AM, Provided> = {
+type Setup<RR, MR extends RR, RE, A, R, AM, Provided> = {
   runtime: ManagedRuntime.ManagedRuntime<RR, RE>
-  middleware: (self: Handler<A, R>) => Handler<AM, Exclude<R, Provided>>
+  middleware: (self: Handler<A, R>) => Handler<AM, MR | Exclude<R, Provided>>
 }
 
 export const fromEffect =
-  <RR, RE, A, R extends RR | Provided, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
+  <RR, MR extends RR, RE, A, R extends RR | Provided, AM, Provided>(setup: Setup<RR, MR, RE, A, R, AM, Provided>) =>
   (handler: Handler<A, R>): ReactRouterHandler<AM> => {
     const app = Effect.gen(function* () {
       const result = yield* setup.middleware(handler)
@@ -54,7 +54,7 @@ export const fromEffect =
   }
 
 export const unwrapEffect =
-  <RR, RE, A, R extends RR | Provided, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
+  <RR, MR extends RR, RE, A, R extends RR | Provided, AM, Provided>(setup: Setup<RR, MR, RE, A, R, AM, Provided>) =>
   (handler: Effect.Effect<Handler<A, R>, never, RR>): ReactRouterHandler<AM> => {
     const handlerPromise = setup.runtime.runPromise(handler)
     return async (args) => {
