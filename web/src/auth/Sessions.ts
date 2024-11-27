@@ -8,7 +8,7 @@ export class CurrentSession extends Context.Tag("@app/CurrentSession")<CurrentSe
 
 export class Sessions extends Effect.Tag("@app/Sessions")<Sessions, RequestSession.RequestSession<Session>>() {}
 
-export class SessionCookie extends Effect.Service<SessionCookie>()("SessionCookie", {
+export class SessionCookie extends Effect.Service<SessionCookie>()("@app/SessionCookie", {
   effect: Effect.gen(function* () {
     return Cookie.make({
       name: "_session",

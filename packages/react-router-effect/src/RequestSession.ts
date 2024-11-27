@@ -47,8 +47,8 @@ export const makeMiddleware =
       const response = yield* HttpResponse
 
       const sessionState = yield* HttpServerRequest.schemaHeaders(Schema.Struct({ cookie: Schema.String })).pipe(
-        Effect.zipRight(
-          cookie.parse.pipe(
+        Effect.flatMap((headers) =>
+          cookie.parse(headers.cookie).pipe(
             Effect.flatMap(fromCookie),
             Effect.map((value) => State.Provided({ value })),
             Effect.orElseSucceed(() => State.InvalidToken())
