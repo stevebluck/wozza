@@ -34,7 +34,9 @@ export class SessionCookie extends Context.Tag("@app/SessionCookie")<SessionCook
 //   (session) => session.token
 // )
 
-export const withSessions = <A, R>(handler: Handler.Handler<A, R>): Handler.Handler<A, Exclude<R, Sessions>> =>
+export const withSessions = {
+  provides: Sessions,
+  handler: <A, R>(handler: Handler.Handler<A, R>): Handler.Handler<A, Exclude<R, Sessions>> =>
   Effect.gen(function* () {
     // const cookie = yield* SessionCookie
     // const response = yield* HttpResponse
@@ -73,6 +75,7 @@ export const withSessions = <A, R>(handler: Handler.Handler<A, R>): Handler.Hand
 
     return yield* result
   })
+}
 
 export const withCurrentSession = <A, R>(handler: Handler.Handler<A, R>) =>
   Sessions.pipe(

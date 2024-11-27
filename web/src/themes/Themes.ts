@@ -37,5 +37,7 @@ export class Themes extends Context.Tag("@app/Themes")<
   })
 }
 
-export const withThemes = <A, R>(handler: Handler.Handler<A, R>) =>
-  Effect.provideServiceEffect(handler, Themes, Themes.make)
+export const withThemes = {
+  provides: Themes,
+  handler: <A, R>(handler: Handler.Handler<A, R>) => Effect.provideServiceEffect(handler, Themes, Themes.make)
+}

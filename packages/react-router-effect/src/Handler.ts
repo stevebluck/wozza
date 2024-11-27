@@ -19,10 +19,9 @@ type Setup<RR, RE, A, R, AM, Provided> = {
 }
 
 export const fromEffect =
-  <RR, RE, A, R extends RR, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
-  (handler: Handler<A, R | Provided>): ReactRouterHandler<AM> => {
+  <RR, RE, A, R extends RR | Provided, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
+  (handler: Handler<A, R>): ReactRouterHandler<AM> => {
     const app = Effect.gen(function* () {
-      // @ts-expect-error
       const result = yield* setup.middleware(handler)
 
       const response = yield* HttpResponse
@@ -55,8 +54,8 @@ export const fromEffect =
   }
 
 export const unwrapEffect =
-  <RR, RE, A, R extends RR, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
-  (handler: Effect.Effect<Handler<A, R | Provided>, never, RR>): ReactRouterHandler<AM> => {
+  <RR, RE, A, R extends RR | Provided, AM, Provided>(setup: Setup<RR, RE, A, R, AM, Provided>) =>
+  (handler: Effect.Effect<Handler<A, R>, never, RR>): ReactRouterHandler<AM> => {
     const handlerPromise = setup.runtime.runPromise(handler)
     return async (args) => {
       return handlerPromise.then((app) => fromEffect(setup)(app)(args))

@@ -14,7 +14,9 @@ import * as Result from "./Result"
  * - Redirect location (for redirects)
  * - Error details (for exceptions)
  */
-export const withLogger = <A, R>(handler: Handler<A, R>): Handler<A, R> =>
+export const withLogger = {
+  provides: undefined,
+  handler: <A, R>(handler: Handler<A, R>): Handler<A, R> =>
   Effect.gen(function* () {
     const request = yield* HttpServerRequest
 
@@ -31,3 +33,4 @@ export const withLogger = <A, R>(handler: Handler<A, R>): Handler<A, R> =>
 
     return result
   })
+}
