@@ -1,5 +1,5 @@
 import { Config, Data, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
-import { SessionsBuilder } from "./auth/Sessions"
+import { RequestSession } from "./auth/RequestSession"
 import { Users } from "./users/Users"
 import { Themes } from "./themes/Themes"
 
@@ -55,7 +55,7 @@ const LoggerLayer = Layer.unwrapEffect(
   })
 )
 
-const AppLayer = Layer.mergeAll(SessionsBuilder.Default, Themes.Default).pipe(
+const AppLayer = Layer.mergeAll(RequestSession.Default, Themes.Default).pipe(
   Layer.provideMerge(CapabilitiesLayer),
   Layer.provide(LoggerLayer)
 )

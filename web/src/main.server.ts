@@ -1,8 +1,8 @@
 import { Handler, Middleware } from "@wozza/react-router-effect"
 import { runtime } from "./runtime"
-import { SessionsBuilder } from "./auth/Sessions"
+import { RequestSession } from "./auth/RequestSession"
 
-const middleware = Middleware.middlewares(Middleware.withLogger, SessionsBuilder.middleware)
+const middleware = Middleware.middlewares(Middleware.withLogger, RequestSession.middleware)
 
 export const Loader = {
   fromEffect: Handler.fromEffect({ runtime, middleware }),

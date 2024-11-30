@@ -1,5 +1,19 @@
 import { Loader } from "~/main.server"
-import { AuthActions } from "~/auth/AuthActions"
-import { CurrentSession } from "../Sessions"
+import { Effect } from "effect"
+import { Users } from "~/users/Users"
+import { CurrentSession, Sessions } from "../Sessions"
+import { Result } from "@wozza/react-router-effect"
 
-export const action = AuthActions.logout.pipe(CurrentSession.middleware, Loader.fromEffect)
+export const action = Loader.unwrapEffect(
+  Effect.gen(function* () {
+    const users = yield* Users
+
+    return CurrentSession.pipe(
+      Effect.flatMap((session) => users.logout(session.token)),
+      Effect.zipRight(Sessions.invalidate),
+      Effect.map(() => Result.Redirect("/")),
+      Effect.merge,
+      Sessions.authenticated
+    )
+  })
+)

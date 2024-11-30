@@ -1,83 +1,65 @@
-import { Cookie, HttpResponse, Middleware, RequestSession, Result } from "@wozza/react-router-effect"
-import { Array, Config, Context, Effect } from "effect"
-import { Session, Token, User } from "@wozza/core"
-import { Id } from "@wozza/prelude"
-import { Users } from "~/users/Users"
-import { HttpServerRequest } from "@effect/platform"
+import { Session } from "@wozza/core"
+import { Middleware, Result } from "@wozza/react-router-effect"
+import { Context, Data, Effect, Option, Ref } from "effect"
 
-export class Sessions extends Effect.Tag("@app/Sessions")<Sessions, RequestSession.RequestSession<Session>>() {}
-
-class SessionCookie extends Effect.Service<SessionCookie>()("@app/SessionCookie", {
-  effect: Effect.gen(function* () {
-    return Cookie.make({
-      name: "_session",
-      maxAge: "30 days",
-      path: "/",
-      schema: Token.schema<Id<User>>(),
-      httpOnly: true,
-      secrets: yield* Config.withDefault(Config.array(Config.redacted("SESSION_SECRETS")), Array.empty()),
-      secure: yield* Config.string("NODE_ENV").pipe(Config.map((env) => env === "production"))
-    })
-  })
-}) {}
-
-export class SessionsBuilder extends Effect.Service<SessionsBuilder>()("@app/SessionsBuilder", {
-  dependencies: [SessionCookie.Default],
-  effect: Effect.gen(function* () {
-    const users = yield* Users
-    const cookie = yield* SessionCookie
+const make = (state: SessionState) =>
+  Effect.gen(function* () {
+    const requestSession = yield* Ref.make<SessionState>(state)
 
     return {
-      fromCookie: Effect.gen(function* () {
-        const request = yield* HttpServerRequest.HttpServerRequest
-
-        return yield* Effect.fromNullable(request.cookies[cookie.settings.name]).pipe(
-          Effect.flatMap((value) =>
-            cookie.parse(value).pipe(
-              Effect.flatMap(users.identify),
-              Effect.map((value) => RequestSession.State.Provided({ value })),
-              Effect.orElseSucceed(() => RequestSession.State.InvalidToken())
-            )
-          ),
-          Effect.orElseSucceed(() => RequestSession.State.NotProvided()),
-          Effect.flatMap(RequestSession.make)
-        )
-      }),
-
-      toCookie: Effect.gen(function* () {
-        const sessions = yield* Sessions
-        const response = yield* HttpResponse
-        const session = yield* sessions.get
-
-        return yield* RequestSession.State.$match(session, {
-          Set: (s) => response.setCookie(cookie, s.value.token),
-          Unset: () => response.unsetCookie(cookie),
-          NotProvided: () => Effect.void,
-          Provided: () => Effect.void,
-          InvalidToken: () => response.unsetCookie(cookie)
-        })
-      })
+      get: requestSession.get,
+      mint: (session: Session) => Ref.set(requestSession, SessionState.Set({ session })),
+      set: (_: SessionState) => Ref.set(requestSession, _),
+      invalidate: Ref.set(requestSession, SessionState.Unset())
     }
   })
-}) {
-  static middleware: Middleware.Middleware<Sessions, SessionsBuilder> = (handler) =>
-    Effect.gen(function* () {
-      const sessionsBuilder = yield* SessionsBuilder
-      const sessions = yield* sessionsBuilder.fromCookie
 
-      return yield* handler.pipe(
-        Effect.onExit(() => sessionsBuilder.toCookie),
-        Effect.provideService(Sessions, sessions)
-      )
-    })
-}
+export class Sessions extends Effect.Tag("@app/Sessions")<Sessions, Effect.Effect.Success<ReturnType<typeof make>>>() {
+  static make = make
 
-export class CurrentSession extends Context.Tag("@app/CurrentSession")<CurrentSession, Session>() {
-  static middleware: Middleware.Middleware<CurrentSession, Sessions> = (handler) =>
+  static authenticated: Middleware.Middleware<CurrentSession, Sessions> = (handler) =>
     Sessions.pipe(
-      Effect.flatMap((sessions) => sessions.sessionData),
+      Effect.flatMap((sessions) => sessions.get),
+      Effect.flatMap(
+        SessionState.$match({
+          Provided: ({ session }) => Option.some(session),
+          Set: ({ session }) => Option.some(session),
+          Unset: () => Option.none(),
+          NotProvided: () => Option.none(),
+          InvalidToken: () => Option.none()
+        })
+      ),
       Effect.mapError(() => Result.Redirect("/login")),
       Effect.flatMap((session) => handler.pipe(Effect.provideService(CurrentSession, session))),
       Effect.merge
     )
+
+  static guest: Middleware.Middleware<never, Sessions> = (handler) =>
+    Sessions.pipe(
+      Effect.flatMap((sessions) => sessions.get),
+      Effect.flatMap(
+        SessionState.$match({
+          Provided: () => Option.none(),
+          Set: () => Option.none(),
+          Unset: () => Option.some(null),
+          NotProvided: () => Option.some(null),
+          InvalidToken: () => Option.some(null)
+        })
+      ),
+      Effect.mapError(() => Result.Redirect("/")),
+      Effect.flatMap(() => handler),
+      Effect.merge
+    )
 }
+
+export type SessionState = Data.TaggedEnum<{
+  Provided: { session: Session }
+  NotProvided: {}
+  Set: { session: Session }
+  Unset: {}
+  InvalidToken: {}
+}>
+
+export const SessionState = Data.taggedEnum<SessionState>()
+
+export class CurrentSession extends Context.Tag("@app/CurrentSession")<CurrentSession, Session>() {}

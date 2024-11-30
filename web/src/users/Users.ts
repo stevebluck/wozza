@@ -22,3 +22,12 @@ export class Users extends Effect.Tag("@app/Users")<Users, Core.Users>() {
 
   static Rdbms = Layer.effect(Users, Core.RdbmsUsers.make).pipe(Layer.provide(Core.Database))
 }
+
+export const credentialFromEmail = (email: Core.Email) =>
+  Core.Credentials.OAuth({
+    provider: "google",
+    email,
+    firstName: Option.none(),
+    lastName: Option.none(),
+    picture: Option.none()
+  })
