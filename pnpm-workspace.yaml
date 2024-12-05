@@ -8,7 +8,7 @@ catalog:
   "@effect/platform-node": "^0.64.27"
   "@effect/sql": "^0.20.8"
   "@effect/sql-pg": "^0.21.8"
-  "@effect/experimenta": "^0.32.9"
+  "@effect/experimental": "^0.32.9"
   effect: ^3.10.16
   typescript: ^5.7.2
   vitest: ^1.6.0

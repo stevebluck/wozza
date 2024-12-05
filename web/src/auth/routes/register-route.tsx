@@ -1,13 +1,13 @@
 import { type MetaFunction } from "react-router"
-import { RegisterPage } from "~/auth/components/register-page"
 import { HttpServerRequest } from "@effect/platform"
 import { Effect, Schema } from "effect"
 import { Email } from "@wozza/core"
 import { Sessions } from "../Sessions"
 import { Result } from "@wozza/react-router-effect"
 import { credentialFromEmail, Users } from "~/users/Users"
-import { Route } from "./+types/login"
+import { Route } from "./+types/register-route"
 import { Loader } from "~/main.server"
+import { RegisterCard } from "../components/register-card"
 
 export const meta: MetaFunction = () => {
   return [{ title: "Login" }]
@@ -29,5 +29,5 @@ export const action = Loader.unwrapEffect(
 )
 
 export default function Login(_props: Route.ComponentProps) {
-  return <RegisterPage />
+  return <RegisterCard />
 }

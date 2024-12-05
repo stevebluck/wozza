@@ -20,7 +20,7 @@ export class RequestSession extends Effect.Service<RequestSession>()("@app/Reque
     })
 
     return {
-      makeSessions: Effect.gen(function* () {
+      createSession: Effect.gen(function* () {
         const request = yield* HttpServerRequest.HttpServerRequest
 
         return yield* Effect.fromNullable(request.cookies[cookie.settings.name]).pipe(
@@ -31,11 +31,10 @@ export class RequestSession extends Effect.Service<RequestSession>()("@app/Reque
               Effect.orElseSucceed(() => SessionState.InvalidToken())
             )
           ),
-          Effect.orElseSucceed(() => SessionState.NotProvided()),
-          Effect.flatMap((state) => Sessions.make(state))
+          Effect.orElseSucceed(() => SessionState.NotProvided())
         )
       }),
-      commit: (session: SessionState) =>
+      commitSession: (session: SessionState) =>
         Effect.gen(function* () {
           const response = yield* HttpResponse
 
@@ -54,13 +53,14 @@ export class RequestSession extends Effect.Service<RequestSession>()("@app/Reque
     Effect.gen(function* () {
       const requestSession = yield* RequestSession
 
-      const sessions = yield* requestSession.makeSessions
+      const session = yield* requestSession.createSession
+      const sessions = yield* Sessions.make(session)
 
       const result = yield* handler.pipe(Effect.provideService(Sessions, sessions))
 
-      const session = yield* sessions.get
+      const newSession = yield* sessions.get
 
-      yield* requestSession.commit(session)
+      yield* requestSession.commitSession(newSession)
 
       return result
     })

@@ -198,6 +198,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.4.49)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
       tailwindcss:
         specifier: 'catalog:'
         version: 3.4.15

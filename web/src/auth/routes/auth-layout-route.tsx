@@ -6,7 +6,7 @@ import { cn } from "~/ui/classnames"
 import { useTheme } from "~/themes/components/theme-selector"
 import { Themes } from "~/themes/Themes"
 import { Sessions } from "../Sessions"
-import { Route } from "./+types/auth-layout"
+import { Route } from "./+types/auth-layout-route"
 
 export const loader = Effect.gen(function* () {
   const themes = yield* Themes
@@ -18,7 +18,7 @@ export const loader = Effect.gen(function* () {
 export default function AuthLayout({ loaderData }: Route.ComponentProps) {
   const { theme } = useTheme(loaderData.theme)
   return (
-    <div className={cn(theme, "bg-background")}>
+    <div className={cn(theme, "flex h-screen w-full items-center justify-center px-4 bg-background")}>
       <Outlet />
     </div>
   )

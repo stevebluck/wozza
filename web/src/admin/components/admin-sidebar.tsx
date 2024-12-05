@@ -161,7 +161,7 @@ const data = {
   ]
 }
 
-export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sidebar> & { user: User.Encoded }) {
+export function AdminSidebar({ user, ...props }: React.ComponentProps<typeof Sidebar> & { user: User.Encoded }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
