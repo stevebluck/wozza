@@ -1,6 +1,6 @@
 import { Data, Schema } from "effect"
-import { Email } from "../emails/Email"
-import { FirstName, LastName, Picture } from "../users/Users"
+import { Email } from "./Email"
+import { FirstName, LastName, Picture } from "./User"
 
 export type Credentials = Data.TaggedEnum<{
   OAuth: OAuthCredentials

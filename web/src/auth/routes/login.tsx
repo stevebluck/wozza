@@ -1,13 +1,14 @@
-import { Route } from "./+types/login-route"
+import { Route } from "./+types/login"
 import { type MetaFunction } from "react-router"
 import { Loader } from "~/main.server"
 import { HttpServerRequest } from "@effect/platform"
 import { Effect, Schema } from "effect"
 import { Sessions } from "../Sessions"
 import { Result } from "@wozza/react-router-effect"
-import { Email } from "@wozza/core"
-import { credentialFromEmail, Users } from "~/users/Users"
 import { LoginCard } from "../components/login-card"
+import { credentialFromEmail } from "../credentialFromEmail"
+import { Email } from "@wozza/domain"
+import { Users } from "@wozza/core"
 
 export const meta: MetaFunction = () => {
   return [{ title: "Login" }]

@@ -23,6 +23,7 @@
     "@react-router/node": "7.0.1",
     "@react-router/serve": "7.0.1",
     "@wozza/core": "workspace:",
+    "@wozza/domain": "workspace:",
     "@wozza/prelude": "workspace:",
     "@wozza/react-router-effect": "workspace:",
     "class-variance-authority": "^0.7.0",

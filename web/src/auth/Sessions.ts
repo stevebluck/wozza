@@ -1,6 +1,6 @@
-import { Session } from "@wozza/core"
 import { Middleware, Result } from "@wozza/react-router-effect"
 import { Context, Data, Effect, Option, Ref } from "effect"
+import { Session } from "@wozza/domain"
 
 const make = (state: SessionState) =>
   Effect.gen(function* () {

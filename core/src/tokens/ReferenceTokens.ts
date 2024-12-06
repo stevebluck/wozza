@@ -1,6 +1,7 @@
 import { Array, DateTime, Duration, Effect, Equal, HashMap, Option, Ref } from "effect"
-import { Token, Tokens } from "./Tokens"
+import { Tokens } from "./Tokens"
 import { Id } from "@wozza/prelude"
+import { Token } from "@wozza/domain"
 
 export class ReferenceTokens<A> implements Tokens<A> {
   static make = <A>(): Effect.Effect<Tokens<A>> =>

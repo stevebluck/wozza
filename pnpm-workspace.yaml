@@ -1,4 +1,5 @@
 packages:
+  - "domain"
   - "core"
   - "web"
   - "packages/*"

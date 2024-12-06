@@ -1,14 +1,15 @@
 import { Cookie, HttpResponse, Middleware } from "@wozza/react-router-effect"
 import { Array, Config, Effect } from "effect"
-import { Token, User } from "@wozza/core"
+import { Users } from "@wozza/core"
 import { Id } from "@wozza/prelude"
-import { Users } from "~/users/Users"
 import { HttpServerRequest } from "@effect/platform"
 import { SessionState, Sessions } from "./Sessions"
+import { Token, User } from "@wozza/domain"
 
 export class RequestSession extends Effect.Service<RequestSession>()("@app/RequestSession", {
   effect: Effect.gen(function* () {
     const users = yield* Users
+
     const cookie = Cookie.make({
       name: "_session",
       maxAge: "30 days",

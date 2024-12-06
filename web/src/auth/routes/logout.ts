@@ -1,8 +1,8 @@
 import { Loader } from "~/main.server"
 import { Effect } from "effect"
-import { Users } from "~/users/Users"
 import { CurrentSession, Sessions } from "../Sessions"
 import { Result } from "@wozza/react-router-effect"
+import { Users } from "@wozza/core"
 
 export const action = Loader.unwrapEffect(
   Effect.gen(function* () {

@@ -56,6 +56,25 @@ importers:
       '@effect/sql-pg':
         specifier: 'catalog:'
         version: 0.21.9(@effect/platform@0.69.25(effect@3.10.16))(@effect/sql@0.20.9(@effect/experimental@0.32.8(@effect/platform-node@0.64.27(@effect/platform@0.69.25(effect@3.10.16))(effect@3.10.16))(@effect/platform@0.69.25(effect@3.10.16))(effect@3.10.16)(ws@8.18.0))(@effect/platform@0.69.25(effect@3.10.16))(effect@3.10.16))(effect@3.10.16)
+      '@wozza/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@wozza/prelude':
+        specifier: workspace:*
+        version: link:../packages/prelude
+      effect:
+        specifier: 'catalog:'
+        version: 3.10.16
+    devDependencies:
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.7.2
+
+  domain:
+    dependencies:
       '@wozza/prelude':
         specifier: workspace:*
         version: link:../packages/prelude
@@ -149,6 +168,9 @@ importers:
       '@wozza/core':
         specifier: 'workspace:'
         version: link:../core
+      '@wozza/domain':
+        specifier: 'workspace:'
+        version: link:../domain
       '@wozza/prelude':
         specifier: 'workspace:'
         version: link:../packages/prelude

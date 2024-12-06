@@ -4,13 +4,14 @@ import { MoonIcon, SunIcon } from "lucide-react"
 import { Theme, ThemeFromString } from "../Theme"
 import { useOptimistic } from "~/ui/hooks/use-optimistic"
 import { Option, Schema } from "effect"
+import { useRootLoaderData } from "~/root"
 
 const FORM_NAME = "theme"
 const THEME_SELECT_NAME = "theme"
 
-export const ThemeSelector = ({ theme: initialTheme }: { theme: Theme }) => {
+export const ThemeSelector = () => {
   const fetcher = useForm(FORM_NAME)
-  const { match } = useTheme(initialTheme)
+  const { match } = useTheme()
 
   return (
     <fetcher.Form method="POST" action="/set-theme" onChange={(e) => fetcher.submit(e.currentTarget)}>
@@ -30,13 +31,14 @@ export const ThemeSelector = ({ theme: initialTheme }: { theme: Theme }) => {
   )
 }
 
-export const useTheme = (initialTheme: Theme) => {
+export const useTheme = () => {
+  const data = useRootLoaderData()
   const formData = useOptimistic(FORM_NAME)
 
   const theme = formData.pipe(
     Option.map((formData) => formData.get(THEME_SELECT_NAME)),
     Option.flatMap(Schema.decodeUnknownOption(ThemeFromString)),
-    Option.getOrElse(() => initialTheme)
+    Option.getOrElse(() => data?.theme || Theme.Light)
   )
 
   return {

@@ -1,5 +1,5 @@
 {
-  "name": "@wozza/core",
+  "name": "@wozza/domain",
   "version": "1.0.0",
   "description": "",
   "private": true,
@@ -16,11 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@effect/sql": "catalog:",
-    "@effect/sql-pg": "catalog:",
     "@wozza/prelude": "workspace:*",
-    "@wozza/domain": "workspace:*",
-    "@effect/platform-node": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

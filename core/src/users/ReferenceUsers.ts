@@ -1,11 +1,12 @@
-import { Users, User } from "./Users"
-import { Duration, Effect, Either, HashMap, Option, Ref } from "effect"
-import { Token, Tokens } from "../tokens/Tokens"
-import { Session } from "../sessions/Session"
+import { Users, UsersSymbol } from "./Users"
+import { Duration, Effect, Either, HashMap, Layer, Option, Ref } from "effect"
+import { Tokens } from "../tokens/Tokens"
+import { Email, Session, Token } from "@wozza/domain"
 import { Id, Identified } from "@wozza/prelude"
-import { Email } from "../emails/Email"
-import { Credentials, CredentialsAlreadyExist, InvalidCredentials } from "../sessions/Credentials"
+import { Credentials, CredentialsAlreadyExist, InvalidCredentials } from "@wozza/domain"
 import { ReferenceTokens } from "../tokens/ReferenceTokens"
+import { User } from "@wozza/domain"
+import { seed } from "./seed"
 
 export class ReferenceUsers implements Users {
   static make: Effect.Effect<Users> = Effect.gen(function* () {
@@ -14,10 +15,23 @@ export class ReferenceUsers implements Users {
     return new ReferenceUsers(state, userTokens)
   })
 
+  static layer = Layer.effect(
+    Users,
+    Effect.gen(function* () {
+      const users = yield* ReferenceUsers.make
+
+      yield* seed.pipe(Effect.orDie, Effect.provideService(Users, users))
+
+      return users
+    })
+  )
+
   private constructor(
     private readonly state: Ref.Ref<State>,
     private readonly userTokens: Tokens<Id<User>>
   ) {}
+
+  _: typeof UsersSymbol = UsersSymbol
 
   register = (credentials: Credentials): Effect.Effect<Session, CredentialsAlreadyExist> => {
     return Ref.modify(this.state, (state) => state.register(credentials)).pipe(

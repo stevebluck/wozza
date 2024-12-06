@@ -17,7 +17,7 @@ import { NavProjects } from "./nav-projects"
 import { NavUser } from "../../users/components/nav-user"
 import { TeamSwitcher } from "./team-switcher"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from "~/ui/sidebar"
-import { User } from "@wozza/core"
+import { User } from "~/users/User"
 
 // This is sample data.
 const data = {
@@ -161,7 +161,7 @@ const data = {
   ]
 }
 
-export function AdminSidebar({ user, ...props }: React.ComponentProps<typeof Sidebar> & { user: User.Encoded }) {
+export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sidebar> & { user: User }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>

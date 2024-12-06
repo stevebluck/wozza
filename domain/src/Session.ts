@@ -1,6 +1,6 @@
 import { Schema } from "effect"
-import { Token } from "../tokens/Tokens"
-import { User } from "../users/Users"
+import { Token } from "./Token"
+import { User } from "./User"
 import { Id, Identified } from "@wozza/prelude"
 
 export class Session extends Schema.Class<Session>("Session")({

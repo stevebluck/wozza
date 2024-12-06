@@ -1,19 +1,32 @@
-import { Users, User, FirstName, LastName, Picture } from "./Users"
-import { Array, DateTime, Effect, Option, Schema } from "effect"
-import { Token } from "../tokens/Tokens"
+import { Users, UsersSymbol } from "./Users"
+import { Array, DateTime, Effect, Layer, Option, Schema } from "effect"
 import { Id, Identified, refineErrorOrDie } from "@wozza/prelude"
-import { Credentials, CredentialsAlreadyExist, InvalidCredentials } from "../sessions/Credentials"
-import { Session } from "../sessions/Session"
 import { SqlClient, SqlError } from "@effect/sql"
-import { Email } from "../emails/Email"
+import { Database } from "../persistence/Database"
+import {
+  Credentials,
+  CredentialsAlreadyExist,
+  Email,
+  InvalidCredentials,
+  Session,
+  Token,
+  User,
+  FirstName,
+  LastName,
+  Picture
+} from "@wozza/domain"
 
 export class RdbmsUsers implements Users {
-  static make = Effect.gen(function* () {
+  static make: Effect.Effect<Users, never, SqlClient.SqlClient> = Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient
     return new RdbmsUsers(sql)
   })
 
-  constructor(private readonly sql: SqlClient.SqlClient) {}
+  static layer = Layer.effect(Users, RdbmsUsers.make).pipe(Layer.provide(Database))
+
+  private constructor(private readonly sql: SqlClient.SqlClient) {}
+
+  _: typeof UsersSymbol = UsersSymbol
 
   identify = (token: Token<Id<User>>): Effect.Effect<Session, Token.NoSuchToken> => {
     const query = this.sql<DbUser & { session_id: string; expires_at: Date }>`
@@ -90,10 +103,7 @@ export class RdbmsUsers implements Users {
         ${DateTime.toDate(expiresAt)}
       ) RETURNING id;`
 
-      return Session.make({
-        user,
-        token: Token.make<Id<User>>(session[0].id)
-      })
+      return Session.make({ user, token: Token.make<Id<User>>(session[0].id) })
     })
 
     return this.sql.withTransaction(tx).pipe(
