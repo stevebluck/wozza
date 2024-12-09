@@ -1,16 +1,16 @@
 import { Users, UsersSymbol } from "./Users"
-import { Array, DateTime, Effect, Layer, Option, Schema } from "effect"
-import { Id, Identified, refineErrorOrDie } from "@wozza/prelude"
-import { SqlClient, SqlError } from "@effect/sql"
+import { Array, Console, DateTime, Effect, Layer, Option, Schema } from "effect"
+import { Id, refineErrorOrDie } from "@wozza/prelude"
+import { SqlClient, SqlError, SqlResolver } from "@effect/sql"
 import { Database } from "../persistence/Database"
 import {
-  Credentials,
   CredentialsAlreadyExist,
   Email,
   InvalidCredentials,
   Session,
   Token,
   User,
+  Password,
   FirstName,
   LastName,
   Picture
@@ -29,30 +29,30 @@ export class RdbmsUsers implements Users {
   _: typeof UsersSymbol = UsersSymbol
 
   identify = (token: Token<Id<User>>): Effect.Effect<Session, Token.NoSuchToken> => {
-    const query = this.sql<DbUser & { session_id: string; expires_at: Date }>`
+    const query = this.sql<DbUser & { session_id: string }>`
       SELECT u.*, s.id as session_id, s.expires_at
       FROM ${this.sql(DbSession.table)} s
       INNER JOIN ${this.sql(DbUser.table)} u ON u.id = s.user_id
       WHERE s.id = ${token.value}
       LIMIT 1; 
-    `
-
+  `
     return query.pipe(
       Effect.orDie,
       Effect.flatMap(Array.head),
-      Effect.map((res) => Session.make({ user: DbUser.toUser(res), token: Token.make<Id<User>>(res.session_id) })),
-      Effect.mapError(() => new Token.NoSuchToken())
+      Effect.mapError(() => new Token.NoSuchToken()),
+      Effect.flatMap(DbSession.toDomain),
+      Effect.provideService(SqlClient.SqlClient, this.sql)
     )
   }
 
-  authenticate = (credentials: Credentials): Effect.Effect<Session, InvalidCredentials> => {
+  authenticate = (email: Email, password: Password.Plaintext): Effect.Effect<Session, InvalidCredentials> => {
     return Effect.gen(this, function* () {
       const now = yield* DateTime.now
       const expiresAt = DateTime.add(now, { days: 2 })
       const query = yield* this.sql<DbUser & { session_id: string }>`
         WITH user_auth AS (
           SELECT * FROM ${this.sql(DbUser.table)}
-          WHERE email = ${credentials.email}
+          WHERE email = ${email}
         ),
         new_session AS (
           INSERT INTO ${this.sql(DbSession.table)} (user_id, expires_at)
@@ -67,7 +67,7 @@ export class RdbmsUsers implements Users {
 
       const result = yield* Array.head(query).pipe(Effect.mapError((e) => new InvalidCredentials()))
 
-      return Session.make({ user: DbUser.toUser(result), token: Token.make<Id<User>>(result.session_id) })
+      return yield* DbSession.toDomain(result)
     })
   }
 
@@ -75,35 +75,23 @@ export class RdbmsUsers implements Users {
     return this.sql`DELETE FROM ${this.sql(DbSession.table)} WHERE id = ${token.value}`.pipe(Effect.ignoreLogged)
   }
 
-  register = (credentials: Credentials): Effect.Effect<Session, CredentialsAlreadyExist> => {
+  register = (email: Email, password: Password.Strong): Effect.Effect<Session, CredentialsAlreadyExist> => {
     const tx = Effect.gen(this, function* () {
       const now = yield* DateTime.now
       const expiresAt = DateTime.add(now, { days: 2 })
 
-      const userResults = yield* this
-        .sql<DbUser>`INSERT INTO ${this.sql(DbUser.table)} (email, first_name, last_name, picture) VALUES (
-          ${credentials.email}, 
-          ${Option.getOrNull(credentials.firstName)}, 
-          ${Option.getOrNull(credentials.lastName)}, 
-          ${Option.getOrNull(credentials.picture)}
-        ) RETURNING id;`
+      const userResults = yield* this.sql<DbUser>`INSERT INTO ${this.sql(DbUser.table)} (email) VALUES (
+          ${email}
+        ) RETURNING *;`
 
-      const user = Identified.make(
-        User.make({
-          email: credentials.email,
-          firstName: credentials.firstName,
-          lastName: credentials.lastName,
-          picture: credentials.picture
-        }),
-        Id.make(userResults[0].id)
-      )
+      const user = userResults[0]
 
       const session = yield* this.sql<DbSession>`INSERT INTO ${this.sql(DbSession.table)} (user_id, expires_at) VALUES (
-        ${user.id.value},
+        ${user.id},
         ${DateTime.toDate(expiresAt)}
       ) RETURNING id;`
 
-      return Session.make({ user, token: Token.make<Id<User>>(session[0].id) })
+      return yield* DbSession.toDomain({ ...user, session_id: session[0].id })
     })
 
     return this.sql.withTransaction(tx).pipe(
@@ -112,43 +100,52 @@ export class RdbmsUsers implements Users {
           return Option.some(new CredentialsAlreadyExist())
         }
         return Option.none()
-      }),
-      Effect.tap(Effect.log)
+      })
     )
   }
 }
 
-class DbUser extends Schema.Class<DbUser>("DbUser")({
-  id: Schema.String,
-  email: Schema.String,
-  first_name: Schema.NullOr(Schema.String),
-  last_name: Schema.NullOr(Schema.String),
-  picture: Schema.NullOr(Schema.String),
-  created_at: Schema.DateFromSelf,
-  updated_at: Schema.DateFromSelf
-}) {
-  static table = "wozza.users"
-
-  static toUser = (user: DbUser): Identified<User> => {
-    return Identified.make(
-      User.make({
-        email: Email.make(user.email),
-        firstName: Option.fromNullable(user.first_name).pipe(Option.map(FirstName.make)),
-        lastName: Option.fromNullable(user.last_name).pipe(Option.map(LastName.make)),
-        picture: Option.fromNullable(user.picture).pipe(Option.map(Picture.make))
-      }),
-      Id.make<User>(user.id)
-    )
-  }
+type DbUser = {
+  id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
+  picture: string | null
+  created_at: Date
+  updated_at: Date
 }
 
-class DbSession extends Schema.Class<DbSession>("DbSession")({
-  id: Schema.String,
-  user_id: Schema.String,
-  created_at: Schema.DateFromSelf,
-  expires_at: Schema.DateFromSelf
-}) {
-  static table = "wozza.user_sessions"
+type DbSession = {
+  id: string
+  user_id: string
+  expires_at: Date
+}
+
+namespace DbUser {
+  export const table = "wozza.users"
+}
+
+namespace DbSession {
+  export const table = "wozza.user_sessions"
+
+  const decodedSession = Schema.decode(Session)
+
+  export const toDomain = (user: DbUser & { session_id: string }): Effect.Effect<Session> =>
+    decodedSession({
+      user: {
+        id: user.id,
+        value: {
+          email: user.email,
+          firstName: Option.fromNullable(user.first_name),
+          lastName: Option.fromNullable(user.last_name),
+          picture: Option.fromNullable(user.picture)
+        }
+      },
+      token: user.session_id
+    }).pipe(
+      Effect.tapError((err) => Effect.logError("failed to parse session from database", err)),
+      Effect.orDie
+    )
 }
 
 namespace DatabaseError {
@@ -160,3 +157,30 @@ namespace DatabaseError {
 
   export const isUniqueConstraintError = (e: SqlError.SqlError) => Schema.is(UniqueConstraintError)(e.cause)
 }
+
+const IdentifyResolver = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient
+
+  return yield* SqlResolver.findById("FindUserById", {
+    Id: Session.fields.token,
+    Result: Schema.Struct({
+      id: Id.schema<User>(),
+      session_id: Session.fields.token,
+      expires_at: Schema.DateFromSelf,
+      email: Email,
+      first_name: Schema.OptionFromNullOr(FirstName),
+      last_name: Schema.OptionFromNullOr(LastName),
+      picture: Schema.OptionFromNullOr(Picture),
+      created_at: Schema.DateFromSelf,
+      updated_at: Schema.DateFromSelf
+    }),
+    ResultId: (result) => result.session_id,
+    execute: (ids) => sql`
+      SELECT u.*, s.id as session_id, s.expires_at
+      FROM ${sql(DbSession.table)} s
+      INNER JOIN ${sql(DbUser.table)} u ON u.id = s.user_id
+      WHERE s.id id IN ${sql.in(ids)}
+      LIMIT 1; 
+    `
+  })
+})

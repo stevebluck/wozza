@@ -1,12 +1,11 @@
 import { Users, UsersSymbol } from "./Users"
 import { Duration, Effect, Either, HashMap, Layer, Option, Ref } from "effect"
 import { Tokens } from "../tokens/Tokens"
-import { Email, Session, Token } from "@wozza/domain"
+import { Email, Password, Session, Token } from "@wozza/domain"
 import { Id, Identified } from "@wozza/prelude"
-import { Credentials, CredentialsAlreadyExist, InvalidCredentials } from "@wozza/domain"
+import { CredentialsAlreadyExist, InvalidCredentials } from "@wozza/domain"
 import { ReferenceTokens } from "../tokens/ReferenceTokens"
 import { User } from "@wozza/domain"
-import { seed } from "./seed"
 
 export class ReferenceUsers implements Users {
   static make: Effect.Effect<Users> = Effect.gen(function* () {
@@ -15,16 +14,7 @@ export class ReferenceUsers implements Users {
     return new ReferenceUsers(state, userTokens)
   })
 
-  static layer = Layer.effect(
-    Users,
-    Effect.gen(function* () {
-      const users = yield* ReferenceUsers.make
-
-      yield* seed.pipe(Effect.orDie, Effect.provideService(Users, users))
-
-      return users
-    })
-  )
+  static layer = Layer.effect(Users, ReferenceUsers.make)
 
   private constructor(
     private readonly state: Ref.Ref<State>,
@@ -33,8 +23,8 @@ export class ReferenceUsers implements Users {
 
   _: typeof UsersSymbol = UsersSymbol
 
-  register = (credentials: Credentials): Effect.Effect<Session, CredentialsAlreadyExist> => {
-    return Ref.modify(this.state, (state) => state.register(credentials)).pipe(
+  register = (email: Email, password: Password.Strong): Effect.Effect<Session, CredentialsAlreadyExist> => {
+    return Ref.modify(this.state, (state) => state.register(email, password)).pipe(
       Effect.flatten,
       Effect.flatMap(this.issueToken)
     )
@@ -48,9 +38,9 @@ export class ReferenceUsers implements Users {
     )
   }
 
-  authenticate = (credentials: Credentials): Effect.Effect<Session, InvalidCredentials> => {
+  authenticate = (email: Email, password: Password.Plaintext): Effect.Effect<Session, InvalidCredentials> => {
     return this.state.get.pipe(
-      Effect.flatMap((state) => state.findByEmail(credentials.email)),
+      Effect.flatMap((state) => state.findByEmail(email)),
       Effect.flatMap(this.issueToken),
       Effect.mapError(() => new InvalidCredentials())
     )
@@ -74,8 +64,11 @@ class State {
     private readonly nextId: number
   ) {}
 
-  register = (credentials: Credentials): [Either.Either<Identified<User>, CredentialsAlreadyExist>, State] => {
-    const found = HashMap.get(this.byEmail, credentials.email)
+  register = (
+    email: Email,
+    password: Password.Strong
+  ): [Either.Either<Identified<User>, CredentialsAlreadyExist>, State] => {
+    const found = HashMap.get(this.byEmail, email)
 
     if (Option.isSome(found)) {
       return [Either.left(new CredentialsAlreadyExist()), this]
@@ -83,10 +76,10 @@ class State {
 
     const user = Identified.make(
       User.make({
-        email: credentials.email,
-        firstName: credentials.firstName,
-        lastName: credentials.lastName,
-        picture: credentials.picture
+        email,
+        firstName: Option.none(),
+        lastName: Option.none(),
+        picture: Option.none()
       }),
       Id.make(this.nextId.toString())
     )

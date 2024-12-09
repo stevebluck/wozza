@@ -1,22 +1,22 @@
 {
-    "$schema": "https://json.schemastore.org/tsconfig",
-    "display": "Default",
-    "compilerOptions": {
-      "isolatedModules": true,
-      "noUnusedLocals": true,
-      "esModuleInterop": true,
-      "resolveJsonModule": true,
-      "strict": true,
-      "allowJs": true,
-      "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true,
-      "exactOptionalPropertyTypes": true,
-      "moduleResolution": "Bundler",
-      "lib": ["ES2022", "dom"],
-      "module": "ESNext",
-      "target": "ES2022",
-      "noEmit": true
-    },
-    "exclude": ["node_modules"]
-  }
-  
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Default",
+  "compilerOptions": {
+    "isolatedModules": true,
+    "noUnusedLocals": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "exactOptionalPropertyTypes": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "target": "ES2022",
+    "noEmit": true
+  },
+  "exclude": ["node_modules"]
+}

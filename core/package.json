@@ -10,21 +10,29 @@
     }
   },
   "scripts": {
-    "check": "tsc"
+    "check": "tsc",
+    "test": "vitest run test --dir test",
+    "test:watch": "vitest test --dir test",
+    "test:int": "vitest run test --dir test-integration --poolOptions.threads.singleThread --poolOptions.forks.singleFork",
+    "test:int:watch": "vitest test --dir test-integration --poolOptions.threads.singleThread --poolOptions.forks.singleFork"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@effect/sql": "catalog:",
     "@effect/sql-pg": "catalog:",
-    "@wozza/prelude": "workspace:*",
     "@wozza/domain": "workspace:*",
-    "@effect/platform-node": "catalog:",
+    "@wozza/prelude": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@effect/vitest": "catalog:",
+    "vitest": "catalog:",
+    "vite": "catalog:",
+    "vite-tsconfig-paths": "catalog:"
   }
 }

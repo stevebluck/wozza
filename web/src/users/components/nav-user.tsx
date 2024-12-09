@@ -82,7 +82,7 @@ export function NavUser({ user }: { user: User }) {
             <DropdownMenuSeparator />
             <Form method="POST" action="/logout">
               <DropdownMenuItem asChild>
-                <button type="submit">
+                <button type="submit" className="w-full">
                   <LogOut />
                   Log out
                 </button>
