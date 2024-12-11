@@ -5,13 +5,13 @@ packages:
   - "packages/*"
 
 catalog:
-  "@effect/platform": ^0.69.25
-  "@effect/platform-node": "^0.64.27"
-  "@effect/sql": "^0.20.8"
-  "@effect/sql-pg": "^0.21.8"
+  "@effect/platform": "0.70.6"
+  "@effect/platform-node": "0.65.6"
+  "@effect/sql": "^0.22.6"
+  "@effect/sql-pg": "^0.23.6"
   "@effect/experimental": "^0.32.9"
-  "@effect/vitest": "^0.14.3"
-  effect: ^3.11.3
+  "@effect/vitest": "^0.14.4"
+  effect: ^3.11.4
   typescript: ^5.7.2
   prettier: ^3.2.5
   prettier-plugin-tailwindcss: ^0.5.14

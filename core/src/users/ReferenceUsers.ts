@@ -8,13 +8,14 @@ import { ReferenceTokens } from "../tokens/ReferenceTokens"
 import { User } from "@wozza/domain"
 
 export class ReferenceUsers implements Users {
-  static make: Effect.Effect<Users> = Effect.gen(function* () {
-    const userTokens = yield* ReferenceTokens.make<Id<User>>()
-    const state = yield* Ref.make(State.empty())
-    return new ReferenceUsers(state, userTokens)
-  })
-
-  static layer = Layer.effect(Users, ReferenceUsers.make)
+  static layer = Layer.effect(
+    Users,
+    Effect.gen(function* () {
+      const userTokens = yield* ReferenceTokens.make<Id<User>>()
+      const state = yield* Ref.make(State.empty())
+      return new ReferenceUsers(state, userTokens)
+    })
+  )
 
   private constructor(
     private readonly state: Ref.Ref<State>,

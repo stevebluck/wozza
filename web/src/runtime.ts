@@ -1,7 +1,7 @@
 import { Config, Data, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
 import { RequestSession } from "./auth/RequestSession"
 import { Themes } from "./themes/Themes"
-import { RdbmsUsers, ReferenceUsers } from "@wozza/core"
+import { Database, RdbmsUsers, ReferenceUsers } from "@wozza/core"
 
 type AppConfig = Data.TaggedEnum<{
   Production: {}
@@ -37,8 +37,8 @@ const CapabilitiesLayer = Layer.unwrapEffect(
     yield* Effect.logInfo(`Running in ${config._tag} mode`)
 
     return AppConfig.$match(config, {
-      Production: () => Layer.mergeAll(RdbmsUsers.layer),
-      DevPersisted: () => Layer.mergeAll(RdbmsUsers.layer),
+      Production: () => Layer.mergeAll(RdbmsUsers.layer).pipe(Layer.provide(Database)),
+      DevPersisted: () => Layer.mergeAll(RdbmsUsers.layer.pipe(Layer.provide(Database))),
       DevInMemory: () => Layer.mergeAll(ReferenceUsers.layer)
     })
   })

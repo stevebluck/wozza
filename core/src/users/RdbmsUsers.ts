@@ -1,28 +1,17 @@
 import { Users, UsersSymbol } from "./Users"
-import { Array, Console, DateTime, Effect, Layer, Option, Schema } from "effect"
+import { Array, DateTime, Effect, Layer, Option, Schema } from "effect"
 import { Id, refineErrorOrDie } from "@wozza/prelude"
-import { SqlClient, SqlError, SqlResolver } from "@effect/sql"
-import { Database } from "../persistence/Database"
-import {
-  CredentialsAlreadyExist,
-  Email,
-  InvalidCredentials,
-  Session,
-  Token,
-  User,
-  Password,
-  FirstName,
-  LastName,
-  Picture
-} from "@wozza/domain"
+import { SqlClient, SqlError } from "@effect/sql"
+import { CredentialsAlreadyExist, Email, InvalidCredentials, Session, Token, User, Password } from "@wozza/domain"
 
 export class RdbmsUsers implements Users {
-  static make: Effect.Effect<Users, never, SqlClient.SqlClient> = Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
-    return new RdbmsUsers(sql)
-  })
-
-  static layer = Layer.effect(Users, RdbmsUsers.make).pipe(Layer.provide(Database))
+  static layer = Layer.effect(
+    Users,
+    Effect.gen(function* () {
+      const sql = yield* SqlClient.SqlClient
+      return new RdbmsUsers(sql)
+    })
+  )
 
   private constructor(private readonly sql: SqlClient.SqlClient) {}
 
@@ -157,30 +146,3 @@ namespace DatabaseError {
 
   export const isUniqueConstraintError = (e: SqlError.SqlError) => Schema.is(UniqueConstraintError)(e.cause)
 }
-
-const IdentifyResolver = Effect.gen(function* () {
-  const sql = yield* SqlClient.SqlClient
-
-  return yield* SqlResolver.findById("FindUserById", {
-    Id: Session.fields.token,
-    Result: Schema.Struct({
-      id: Id.schema<User>(),
-      session_id: Session.fields.token,
-      expires_at: Schema.DateFromSelf,
-      email: Email,
-      first_name: Schema.OptionFromNullOr(FirstName),
-      last_name: Schema.OptionFromNullOr(LastName),
-      picture: Schema.OptionFromNullOr(Picture),
-      created_at: Schema.DateFromSelf,
-      updated_at: Schema.DateFromSelf
-    }),
-    ResultId: (result) => result.session_id,
-    execute: (ids) => sql`
-      SELECT u.*, s.id as session_id, s.expires_at
-      FROM ${sql(DbSession.table)} s
-      INNER JOIN ${sql(DbUser.table)} u ON u.id = s.user_id
-      WHERE s.id id IN ${sql.in(ids)}
-      LIMIT 1; 
-    `
-  })
-})

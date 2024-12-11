@@ -1,18 +1,12 @@
 import { Effect, Layer } from "effect"
-import { NodeContext, NodeRuntime } from "@effect/platform-node"
-import { PgClient, PgMigrator } from "@effect/sql-pg"
-import { fileURLToPath } from "node:url"
+import { NodeRuntime } from "@effect/platform-node"
+import { Migrator } from "./Migrator"
+import { PgClient } from "@effect/sql-pg"
 
-export const Database = PgClient.layer({
+const Database = PgClient.layer({
   database: "wozza"
 })
 
-const MigratorLive = PgMigrator.layer({
-  loader: PgMigrator.fromFileSystem(fileURLToPath(new URL("migrations", import.meta.url))),
-  // Where to put the `_schema.sql` file
-  schemaDirectory: "migrations"
-}).pipe(Layer.provide(Database))
-
-const EnvLive = Layer.mergeAll(Database, MigratorLive).pipe(Layer.provide(NodeContext.layer))
+const EnvLive = Migrator.pipe(Layer.provide(Database))
 
 Effect.void.pipe(Effect.provide(EnvLive), NodeRuntime.runMain)

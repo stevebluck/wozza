@@ -14,7 +14,8 @@
     "test": "vitest run test --dir test",
     "test:watch": "vitest test --dir test",
     "test:int": "vitest run test --dir test-integration --poolOptions.threads.singleThread --poolOptions.forks.singleFork",
-    "test:int:watch": "vitest test --dir test-integration --poolOptions.threads.singleThread --poolOptions.forks.singleFork"
+    "test:int:watch": "vitest test --dir test-integration --poolOptions.threads.singleThread --poolOptions.forks.singleFork",
+    "migrate": "tsx src/persistence/migrate.ts"
   },
   "keywords": [],
   "author": "",
@@ -28,11 +29,14 @@
     "effect": "catalog:"
   },
   "devDependencies": {
-    "prettier": "catalog:",
-    "typescript": "catalog:",
     "@effect/vitest": "catalog:",
-    "vitest": "catalog:",
+    "@testcontainers/postgresql": "^10.16.0",
+    "prettier": "catalog:",
+    "testcontainers": "^10.16.0",
+    "tsx": "^4.19.2",
+    "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-tsconfig-paths": "catalog:"
+    "vite-tsconfig-paths": "catalog:",
+    "vitest": "catalog:"
   }
 }
